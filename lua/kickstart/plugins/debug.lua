@@ -1,10 +1,9 @@
 -- debug.lua
 --
--- Shows how to use the DAP plugin to debug your code.
---
--- Primarily focused on configuring the debugger for Go, but can
--- be extended to other languages as well. That's why it's called
--- kickstart.nvim and not kitchen-sink.nvim ;)
+-- Shared nvim-dap base: adapters/keymaps/UI live here for every language. Go (delve) is the
+-- original stock example; Python (debugpy) and C/C++ (codelldb) are added below. Java's DAP
+-- activation is different enough (triggered from jdtls's own lifecycle, not a static adapter
+-- registration) that it lives in lua/custom/plugins/java.lua instead.
 
 return {
   -- NOTE: Yes, you can install new plugins here!
@@ -95,6 +94,8 @@ return {
       ensure_installed = {
         -- Update this to ensure that you have the debuggers for the langs you want
         'delve',
+        'debugpy',
+        'codelldb',
       },
     }
 
@@ -144,5 +145,42 @@ return {
         detached = vim.fn.has 'win32' == 0,
       },
     }
+
+    -- C / C++ debugging via codelldb (installed through Mason above).
+    -- Python debugging (debugpy) is set up separately in lua/custom/plugins/python.lua,
+    -- since it needs to resolve the project's selected venv first.
+    local codelldb_path = vim.fn.exepath 'codelldb'
+    if codelldb_path == '' then
+      local ok, codelldb_pkg = pcall(require('mason-registry').get_package, 'codelldb')
+      if ok and codelldb_pkg:is_installed() then
+        codelldb_path = codelldb_pkg:get_install_path() .. '/extension/adapter/codelldb'
+      end
+    end
+
+    if codelldb_path ~= '' then
+      dap.adapters.codelldb = {
+        type = 'server',
+        port = '${port}',
+        executable = {
+          command = codelldb_path,
+          args = { '--port', '${port}' },
+        },
+      }
+
+      local codelldb_config = {
+        {
+          name = 'Launch file',
+          type = 'codelldb',
+          request = 'launch',
+          program = function()
+            return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/', 'file')
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+        },
+      }
+      dap.configurations.c = codelldb_config
+      dap.configurations.cpp = codelldb_config
+    end
   end,
 }

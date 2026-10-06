@@ -26,12 +26,23 @@ External Requirements:
 - [ripgrep](https://github.com/BurntSushi/ripgrep#installation),
   [fd-find](https://github.com/sharkdp/fd#installation)
 - Clipboard tool (xclip/xsel/win32yank or other depending on the platform)
-- A [Nerd Font](https://www.nerdfonts.com/): optional, provides various icons
-  - if you have it set `vim.g.have_nerd_font` in `init.lua` to true
+- `lazygit` — powers the in-editor git panel (`<leader>gg`); installed automatically by
+  `install.sh` on Arch/macOS
+- A [Nerd Font](https://www.nerdfonts.com/): `vim.g.have_nerd_font` is `true` in this config, and
+  `install.sh` installs JetBrainsMono Nerd Font automatically on Arch/macOS — if you'd rather skip
+  it, flip the flag back to `false` and select a non-Nerd-Font in your terminal
 - Emoji fonts (Ubuntu only, and only if you want emoji!) `sudo apt install fonts-noto-color-emoji`
 - Language Setup:
-  - If you want to write Typescript, you need `npm`
-  - If you want to write Golang, you will need `go`
+  - TypeScript/JS/HTML/CSS/Tailwind: `npm` (the LSP servers themselves are Mason-managed)
+  - Golang: `go`
+  - Java: a JDK on `PATH`/`JAVA_HOME` (`install.sh`'s `ensure_jdk` handles this on Arch/macOS);
+    `jdtls` only fully attaches inside a real Maven/Gradle project (see `cheatsheet.md`)
+  - C/C++: a per-project `compile_commands.json` or `compile_flags.txt` for `clangd` to give real
+    diagnostics (generate via `bear -- make` or CMake's `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`) —
+    this is per-project, not something `install.sh` can automate
+  - LaTeX: a TeX distribution providing `latexmk`, plus a PDF viewer (zathura on Linux, Skim/
+    Preview on macOS) for `vimtex` forward-search — both installed by `install.sh`'s
+    `ensure_tex_distribution`/`ensure_pdf_viewer` on Arch/macOS
   - etc.
 
 > [!NOTE]

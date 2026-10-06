@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -671,9 +671,10 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {},
         gopls = {},
         pyright = {},
+        ruff = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -681,8 +682,21 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
-        --
+        ts_ls = {},
+        html = {},
+        cssls = {},
+        tailwindcss = {},
+        jsonls = {},
+        eslint = {},
+        emmet_language_server = {},
+        dockerls = {},
+        docker_compose_language_service = {},
+        bashls = {},
+        texlab = {},
+        -- NOTE: `jdtls` (Java) is intentionally NOT listed here — it needs a per-project
+        -- workspace dir, lombok, and bundled java-debug/java-test jars that this generic
+        -- servers-table + mason-lspconfig handler pattern can't express. It's started from
+        -- `lua/custom/plugins/java.lua` instead, via a FileType autocmd.
 
         lua_ls = {
           -- cmd = { ... },
@@ -716,6 +730,15 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'jdtls', -- Java LSP (started manually from lua/custom/plugins/java.lua)
+        'java-debug-adapter', -- Java DAP bundle, loaded by jdtls
+        'java-test', -- Java test-discovery bundle, loaded by jdtls
+        'shfmt', -- Shell formatter
+        'prettier', -- Web formatter fallback
+        'prettierd', -- Web formatter (faster daemon, preferred)
+        'hadolint', -- Dockerfile linter (see lua/kickstart/plugins/lint.lua)
+        'shellcheck', -- Shell linter (see lua/kickstart/plugins/lint.lua)
+        'markdownlint-cli', -- Markdown linter (see lua/kickstart/plugins/lint.lua)
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -768,11 +791,21 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
+        sh = { 'shfmt' },
+        -- Python formatting + import-sorting is handled by ruff's LSP server (see
+        -- `servers.ruff` above) via conform's `lsp_format = 'fallback'` below, not a separate
+        -- formatter here — avoids juggling ruff (lint) + isort + black as three tools.
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        typescript = { 'prettierd', 'prettier', stop_after_first = true },
+        javascriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        typescriptreact = { 'prettierd', 'prettier', stop_after_first = true },
+        html = { 'prettierd', 'prettier', stop_after_first = true },
+        css = { 'prettierd', 'prettier', stop_after_first = true },
+        scss = { 'prettierd', 'prettier', stop_after_first = true },
+        json = { 'prettierd', 'prettier', stop_after_first = true },
+        yaml = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -944,7 +977,33 @@ require('lazy').setup({
     build = ':TSUpdate',
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     config = function()
-      local ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+      local ensure_installed = {
+        'bash',
+        'c',
+        'cpp',
+        'css',
+        'diff',
+        'dockerfile',
+        'gitignore',
+        'html',
+        'java',
+        'javascript',
+        'json',
+        'latex',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'python',
+        'query',
+        'scss',
+        'toml',
+        'tsx',
+        'typescript',
+        'vim',
+        'vimdoc',
+        'yaml',
+      }
 
       require('nvim-treesitter').setup()
 
@@ -991,12 +1050,12 @@ require('lazy').setup({
   --  Here are some example plugins that I've included in the Kickstart repository.
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
-  -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
-  -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.debug',
+  require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.lint',
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
