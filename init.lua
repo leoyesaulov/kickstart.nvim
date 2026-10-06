@@ -738,7 +738,7 @@ require('lazy').setup({
         'prettierd', -- Web formatter (faster daemon, preferred)
         'hadolint', -- Dockerfile linter (see lua/kickstart/plugins/lint.lua)
         'shellcheck', -- Shell linter (see lua/kickstart/plugins/lint.lua)
-        'markdownlint-cli', -- Markdown linter (see lua/kickstart/plugins/lint.lua)
+        'markdownlint', -- Markdown linter (see lua/kickstart/plugins/lint.lua)
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

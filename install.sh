@@ -56,6 +56,23 @@ ensure_lazygit() {
   fi
 }
 
+ensure_fd() {
+  if command -v fd >/dev/null 2>&1; then
+    echo "OK      fd already installed ($(command -v fd))"
+    return
+  fi
+
+  if command -v pacman >/dev/null 2>&1; then
+    echo "Installing fd via pacman (needed by venv-selector.nvim to locate virtualenvs)..."
+    sudo pacman -S --needed fd
+  elif command -v brew >/dev/null 2>&1; then
+    echo "Installing fd via Homebrew (needed by venv-selector.nvim to locate virtualenvs)..."
+    brew install fd
+  else
+    echo "WARNING fd not found and neither pacman nor brew is available." >&2
+  fi
+}
+
 ensure_jdk() {
   if command -v javac >/dev/null 2>&1; then
     echo "OK      JDK already installed ($(command -v javac))"
@@ -123,6 +140,7 @@ config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/${NVIM_APPNAME:-nvim}"
 ensure_tree_sitter_cli
 ensure_nerd_font
 ensure_lazygit
+ensure_fd
 ensure_jdk
 ensure_tex_distribution
 ensure_pdf_viewer

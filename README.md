@@ -23,8 +23,9 @@ If you are experiencing issues, please make sure you have the latest versions.
 
 External Requirements:
 - Basic utils: `git`, `make`, `unzip`, C Compiler (`gcc`)
-- [ripgrep](https://github.com/BurntSushi/ripgrep#installation),
-  [fd-find](https://github.com/sharkdp/fd#installation)
+- [ripgrep](https://github.com/BurntSushi/ripgrep#installation)
+- `fd` — needed by venv-selector.nvim to locate Python virtualenvs; installed automatically by
+  `install.sh` on Arch/macOS ([manual install](https://github.com/sharkdp/fd#installation) otherwise)
 - Clipboard tool (xclip/xsel/win32yank or other depending on the platform)
 - `lazygit` — powers the in-editor git panel (`<leader>gg`); installed automatically by
   `install.sh` on Arch/macOS

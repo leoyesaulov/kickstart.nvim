@@ -53,8 +53,23 @@ return {
           -- Only run the linter in buffers that you can modify in order to
           -- avoid superfluous noise, notably within the handy LSP pop-ups that
           -- describe the hovered symbol using Markdown.
-          if vim.bo.modifiable then
-            lint.try_lint()
+          if not vim.bo.modifiable then
+            return
+          end
+          local names = lint.linters_by_ft[vim.bo.filetype]
+          if not names then
+            return
+          end
+          -- Skip linters whose binary isn't installed yet (e.g. Mason still
+          -- installing it) instead of letting nvim-lint's async ENOENT error
+          -- interrupt the UI; this self-heals once the binary shows up.
+          names = vim.tbl_filter(function(name)
+            local linter = lint.linters[name]
+            local cmd = type(linter) == 'table' and linter.cmd or linter
+            return type(cmd) == 'string' and vim.fn.executable(cmd) == 1
+          end, names)
+          if #names > 0 then
+            lint.try_lint(names)
           end
         end,
       })
