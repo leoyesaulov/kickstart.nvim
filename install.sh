@@ -16,8 +16,11 @@ ensure_tree_sitter_cli() {
   if command -v pacman >/dev/null 2>&1; then
     echo "Installing tree-sitter-cli via pacman (required to compile parsers on Nvim 0.12+)..."
     sudo pacman -S --needed tree-sitter-cli
+  elif command -v brew >/dev/null 2>&1; then
+    echo "Installing tree-sitter-cli via Homebrew (required to compile parsers on Nvim 0.12+)..."
+    brew install tree-sitter
   else
-    echo "WARNING tree-sitter CLI not found and pacman isn't available." >&2
+    echo "WARNING tree-sitter CLI not found and neither pacman nor brew is available." >&2
     echo "        Install it via your package manager (not npm — upstream warns" >&2
     echo "        the npm package is a mismatched build), then run :TSUpdate in Nvim." >&2
   fi

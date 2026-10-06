@@ -95,6 +95,11 @@ git clone https://github.com/nvim-lua/kickstart.nvim.git "${env:LOCALAPPDATA}\nv
 
 </details>
 
+> [!TIP]
+> Alternatively, after cloning, run `./install.sh` (bash), `./install.fish`, or `./install.zsh`
+> from the repo to symlink it into place automatically — safe to re-run, and anything already in
+> the way is backed up rather than overwritten.
+
 ### Post Installation
 
 Start Neovim
@@ -236,6 +241,14 @@ sudo dnf install -y gcc make git ripgrep fd-find unzip neovim
 
 ```sh
 sudo pacman -S --noconfirm --needed gcc make git ripgrep fd unzip neovim
+```
+</details>
+
+#### macOS Install
+<details><summary>macOS Install Steps</summary>
+
+```sh
+brew install neovim ripgrep fd git
 ```
 </details>
 
