@@ -940,22 +940,40 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    branch = 'main', -- the 'master' branch only supports Nvim <=0.11; this Nvim requires main's rewritten API
     build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-    opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = { 'ruby' },
-      },
-      indent = { enable = true, disable = { 'ruby' } },
-    },
+    config = function()
+      local ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+
+      require('nvim-treesitter').setup()
+
+      local installed = require('nvim-treesitter').get_installed()
+      local to_install = vim.tbl_filter(function(lang)
+        return not vim.tbl_contains(installed, lang)
+      end, ensure_installed)
+
+      if #to_install > 0 then
+        require('nvim-treesitter').install(to_install)
+      end
+
+      vim.api.nvim_create_autocmd('FileType', {
+        callback = function(ev)
+          if not pcall(vim.treesitter.start) then
+            return
+          end
+
+          -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
+          --  If you are experiencing weird indenting issues, add the language here instead of
+          --  setting indentexpr, so it falls back to vim's regex-based indent.
+          if ev.match == 'ruby' then
+            vim.bo[ev.buf].syntax = 'on'
+          else
+            vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+          end
+        end,
+      })
+    end,
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
     --
@@ -984,7 +1002,7 @@ require('lazy').setup({
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
