@@ -7,22 +7,44 @@
 # in the way is backed up (never deleted) before linking.
 set -euo pipefail
 
-ensure_tree_sitter_cli() {
-  if command -v tree-sitter >/dev/null 2>&1; then
-    echo "OK      tree-sitter CLI already installed ($(command -v tree-sitter))"
+# ensure_pkg <command> <pacman packages> <brew formula> <reason>
+# Installs the package(s) providing <command> unless it's already on PATH.
+# <pacman packages> may list several space-separated packages.
+ensure_pkg() {
+  local cmd="$1" pacman_pkgs="$2" brew_pkg="$3" reason="$4"
+  if command -v "$cmd" >/dev/null 2>&1; then
+    echo "OK      $cmd already installed ($(command -v "$cmd"))"
     return
   fi
 
   if command -v pacman >/dev/null 2>&1; then
-    echo "Installing tree-sitter-cli via pacman (required to compile parsers on Nvim 0.12+)..."
-    sudo pacman -S --needed tree-sitter-cli
+    echo "Installing $pacman_pkgs via pacman ($reason)..."
+    # shellcheck disable=SC2086 # intentional word-splitting of the package list
+    sudo pacman -S --needed $pacman_pkgs
   elif command -v brew >/dev/null 2>&1; then
-    echo "Installing tree-sitter-cli via Homebrew (required to compile parsers on Nvim 0.12+)..."
-    brew install tree-sitter
+    echo "Installing $brew_pkg via Homebrew ($reason)..."
+    brew install "$brew_pkg"
   else
-    echo "WARNING tree-sitter CLI not found and neither pacman nor brew is available." >&2
-    echo "        Install it via your package manager (not npm — upstream warns" >&2
-    echo "        the npm package is a mismatched build), then run :TSUpdate in Nvim." >&2
+    echo "WARNING $cmd not found and neither pacman nor brew is available ($reason)." >&2
+  fi
+}
+
+ensure_build_tools() {
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    # Homebrew's installer already pulls in the Xcode Command Line Tools (make, cc, python3, unzip).
+    if xcode-select -p >/dev/null 2>&1; then
+      echo "OK      Xcode Command Line Tools installed"
+    else
+      echo "WARNING Xcode Command Line Tools missing — run 'xcode-select --install', then re-run this script." >&2
+    fi
+    return
+  fi
+
+  if command -v pacman >/dev/null 2>&1; then
+    echo "Installing base-devel, unzip, python via pacman (plugin builds, Mason unpacking, debugpy)..."
+    sudo pacman -S --needed base-devel unzip python
+  else
+    echo "WARNING pacman not found — make sure make, a C compiler, unzip and python3 are installed." >&2
   fi
 }
 
@@ -39,43 +61,11 @@ ensure_nerd_font() {
   fi
 }
 
-ensure_lazygit() {
-  if command -v lazygit >/dev/null 2>&1; then
-    echo "OK      lazygit already installed ($(command -v lazygit))"
-    return
-  fi
-
-  if command -v pacman >/dev/null 2>&1; then
-    echo "Installing lazygit via pacman..."
-    sudo pacman -S --needed lazygit
-  elif command -v brew >/dev/null 2>&1; then
-    echo "Installing lazygit via Homebrew..."
-    brew install lazygit
-  else
-    echo "WARNING lazygit not found and neither pacman nor brew is available." >&2
-  fi
-}
-
-ensure_fd() {
-  if command -v fd >/dev/null 2>&1; then
-    echo "OK      fd already installed ($(command -v fd))"
-    return
-  fi
-
-  if command -v pacman >/dev/null 2>&1; then
-    echo "Installing fd via pacman (needed by venv-selector.nvim to locate virtualenvs)..."
-    sudo pacman -S --needed fd
-  elif command -v brew >/dev/null 2>&1; then
-    echo "Installing fd via Homebrew (needed by venv-selector.nvim to locate virtualenvs)..."
-    brew install fd
-  else
-    echo "WARNING fd not found and neither pacman nor brew is available." >&2
-  fi
-}
-
 ensure_jdk() {
-  if command -v javac >/dev/null 2>&1; then
-    echo "OK      JDK already installed ($(command -v javac))"
+  # macOS ships stub /usr/bin/java{,c} that exist on PATH but fail with "Unable to locate a Java
+  # Runtime" — so check that javac actually runs, not just that it's on PATH.
+  if javac -version >/dev/null 2>&1 || { [[ "$(uname)" == "Darwin" ]] && /usr/libexec/java_home >/dev/null 2>&1; }; then
+    echo "OK      JDK already installed"
     return
   fi
 
@@ -85,7 +75,9 @@ ensure_jdk() {
   elif command -v brew >/dev/null 2>&1; then
     echo "Installing openjdk via Homebrew (needed for Java LSP/debugging, jdtls)..."
     brew install openjdk
-    echo "NOTE    brew's openjdk is keg-only — follow its printed caveat to add it to PATH/JAVA_HOME." >&2
+    # brew's openjdk is keg-only; link it where java_home and the /usr/bin stubs look for JDKs.
+    echo "Linking openjdk into /Library/Java/JavaVirtualMachines (needs sudo)..."
+    sudo ln -sfn "$(brew --prefix)/opt/openjdk/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk.jdk
   else
     echo "WARNING JDK not found and neither pacman nor brew is available." >&2
   fi
@@ -101,13 +93,19 @@ ensure_tex_distribution() {
     echo "Installing texlive-basic + texlive-latexextra via pacman (needed for vimtex/latexmk)..."
     sudo pacman -S --needed texlive-basic texlive-latexextra
   elif command -v brew >/dev/null 2>&1; then
-    echo "Installing basictex via Homebrew (lightweight TeX distro, needed for vimtex/latexmk)..."
-    brew install --cask basictex
-    if command -v tlmgr >/dev/null 2>&1; then
-      sudo tlmgr update --self
-      sudo tlmgr install latexmk
+    local tlmgr=/Library/TeX/texbin/tlmgr
+    if [[ ! -x "$tlmgr" ]]; then
+      echo "Installing basictex via Homebrew (lightweight TeX distro, needed for vimtex/latexmk)..."
+      brew install --cask basictex
+    fi
+    # Call tlmgr by full path: /Library/TeX/texbin isn't on PATH until a new shell starts.
+    if [[ -x "$tlmgr" ]]; then
+      echo "Installing latexmk via tlmgr..."
+      sudo "$tlmgr" update --self
+      sudo "$tlmgr" install latexmk
+      echo "NOTE    Open a new shell so /Library/TeX/texbin (latexmk) is on PATH." >&2
     else
-      echo "NOTE    Open a new shell so tlmgr is on PATH, then run: sudo tlmgr install latexmk" >&2
+      echo "WARNING tlmgr not found at $tlmgr — install latexmk manually: sudo tlmgr install latexmk" >&2
     fi
   else
     echo "WARNING No TeX distribution found and neither pacman nor brew is available." >&2
@@ -116,8 +114,13 @@ ensure_tex_distribution() {
 
 ensure_pdf_viewer() {
   if [[ "$(uname -s)" == "Darwin" ]]; then
-    echo "OK      macOS: Preview.app works for viewing (no live forward-search)."
-    echo "        For vimtex forward-search, optionally: brew install --cask skim"
+    # latex.lua sets vimtex_view_method = 'skim' on macOS.
+    if [[ -d /Applications/Skim.app ]]; then
+      echo "OK      Skim already installed"
+    else
+      echo "Installing Skim via Homebrew (PDF viewer with vimtex forward-search support)..."
+      brew install --cask skim
+    fi
     return
   fi
 
@@ -137,11 +140,18 @@ ensure_pdf_viewer() {
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/${NVIM_APPNAME:-nvim}"
 
-ensure_tree_sitter_cli
-ensure_nerd_font
-ensure_lazygit
-ensure_fd
+ensure_build_tools
+ensure_pkg nvim neovim neovim "the editor itself"
+ensure_pkg rg ripgrep ripgrep "Telescope live grep"
+ensure_pkg fd fd fd "needed by venv-selector.nvim to locate virtualenvs"
+# Not npm's tree-sitter-cli — upstream warns it's a mismatched build. On brew, the plain
+# 'tree-sitter' formula is only the library; the CLI is 'tree-sitter-cli'.
+ensure_pkg tree-sitter tree-sitter-cli tree-sitter-cli "required to compile parsers on Nvim 0.12+"
+ensure_pkg npm "nodejs npm" node "Mason installs pyright, ts_ls, eslint, prettier, etc. via npm"
+ensure_pkg go go go "Mason installs gopls and delve via go"
 ensure_jdk
+ensure_pkg lazygit lazygit lazygit "LazyGit integration"
+ensure_nerd_font
 ensure_tex_distribution
 ensure_pdf_viewer
 
@@ -174,3 +184,4 @@ link init.lua
 link lua
 
 echo "Done. Config dir: $config_dir"
+echo "Next: open nvim and let Lazy + Mason finish installing (:Lazy, :Mason), then run :checkhealth."

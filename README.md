@@ -21,9 +21,13 @@ If you are experiencing issues, please make sure you have the latest versions.
 
 ### Install External Dependencies
 
-External Requirements:
-- Basic utils: `git`, `make`, `unzip`, C Compiler (`gcc`)
+External Requirements (on Arch/macOS, `./install.sh` installs everything below — including
+Neovim itself — so a fresh system only needs `git` plus `pacman` or `brew`):
+- Basic utils: `git`, `make`, `unzip`, C Compiler (`gcc`) — `base-devel` on Arch, Xcode Command
+  Line Tools on macOS (Homebrew's installer already sets these up)
 - [ripgrep](https://github.com/BurntSushi/ripgrep#installation)
+- `tree-sitter` CLI, needed to compile parsers on Nvim 0.12+ (brew formula: `tree-sitter-cli`, not
+  `tree-sitter`, which is just the library)
 - `fd` — needed by venv-selector.nvim to locate Python virtualenvs; installed automatically by
   `install.sh` on Arch/macOS ([manual install](https://github.com/sharkdp/fd#installation) otherwise)
 - Clipboard tool (xclip/xsel/win32yank or other depending on the platform)
@@ -34,15 +38,18 @@ External Requirements:
   it, flip the flag back to `false` and select a non-Nerd-Font in your terminal
 - Emoji fonts (Ubuntu only, and only if you want emoji!) `sudo apt install fonts-noto-color-emoji`
 - Language Setup:
-  - TypeScript/JS/HTML/CSS/Tailwind: `npm` (the LSP servers themselves are Mason-managed)
-  - Golang: `go`
-  - Java: a JDK on `PATH`/`JAVA_HOME` (`install.sh`'s `ensure_jdk` handles this on Arch/macOS);
+  - TypeScript/JS/HTML/CSS/Tailwind, Python (pyright), Bash, Docker, Markdown lint, prettier:
+    `npm` — Mason installs all of these through it
+  - Golang: `go` — Mason installs `gopls` and `delve` through it
+  - Java: a JDK on `PATH`/`JAVA_HOME` (`install.sh`'s `ensure_jdk` handles this on Arch/macOS).
+    On macOS, `/usr/bin/java` is only a stub — `brew install openjdk` and link it with
+    `sudo ln -sfn "$(brew --prefix)/opt/openjdk/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk.jdk`;
     `jdtls` only fully attaches inside a real Maven/Gradle project (see `cheatsheet.md`)
   - C/C++: a per-project `compile_commands.json` or `compile_flags.txt` for `clangd` to give real
     diagnostics (generate via `bear -- make` or CMake's `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`) —
     this is per-project, not something `install.sh` can automate
-  - LaTeX: a TeX distribution providing `latexmk`, plus a PDF viewer (zathura on Linux, Skim/
-    Preview on macOS) for `vimtex` forward-search — both installed by `install.sh`'s
+  - LaTeX: a TeX distribution providing `latexmk`, plus a PDF viewer (zathura on Linux, Skim on
+    macOS) for `vimtex` forward-search — both installed by `install.sh`'s
     `ensure_tex_distribution`/`ensure_pdf_viewer` on Arch/macOS
   - etc.
 
