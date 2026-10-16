@@ -839,7 +839,10 @@ require('lazy').setup({
           --   end,
           -- },
         },
-        opts = {},
+        -- Own snippets live in lua/custom/snippets/<filetype>.lua (e.g. java.lua).
+        config = function()
+          require('luasnip.loaders.from_lua').lazy_load { paths = { vim.fn.stdpath 'config' .. '/lua/custom/snippets' } }
+        end,
       },
       'folke/lazydev.nvim',
     },
@@ -890,6 +893,8 @@ require('lazy').setup({
         default = { 'lsp', 'path', 'snippets', 'lazydev' },
         providers = {
           lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+          -- Rank own snippets above same-named LSP templates (jdtls's fori, main, ...).
+          snippets = { score_offset = 10 },
         },
       },
 

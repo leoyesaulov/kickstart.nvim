@@ -125,18 +125,35 @@ either** — clangd's own `textDocument/formatting` covers it via LSP fallback.
 
 | Key | Action |
 |---|---|
-| `<Tab>` / `<S-Tab>` | Move right/left through snippet placeholders (Insert mode only) |
+| `<Tab>` / `<S-Tab>` | Move right/left through snippet placeholders (Insert/Select mode) |
 | `<C-space>` | Open completion menu / show docs if already open |
 | `<C-n>` / `<C-p>` or `<Down>` / `<Up>` | Select next / previous item |
 | `<C-y>` | Accept selected completion |
 | `<C-e>` | Hide completion menu |
 | `<C-k>` | Toggle signature help |
 
-Sources: LSP, path, snippets (LuaSnip), lazydev (Neovim Lua API).
+Sources: LSP, path, snippets (LuaSnip), lazydev (Neovim Lua API). Your own snippets go in
+`lua/custom/snippets/<filetype>.lua`. Currently that's Java only, see [Java snippets](#java-snippets).
 
 > Note: `<Tab>`/`<S-Tab>` are also bound in **Normal mode** by bufferline.nvim (see
 > [Buffer Tabs](#buffer-tabs-bufferlinenvim)) — no conflict, since blink.cmp's mapping is
-> Insert-mode only.
+> Insert/Select-mode only.
+
+### Snippet placeholders (Select mode)
+
+Accepting a function completion (e.g. a Java method) inserts its argument names as snippet
+placeholders and drops you into **Select mode** (`-- SELECT --` in the statusline) on the first
+one. In Select mode, any typed character **replaces the whole placeholder** — that's how you fill
+in arguments.
+
+| Key | Action |
+|---|---|
+| *type anything* | Replace the placeholder with what you type |
+| `<Tab>` | Keep this placeholder, jump to the next one (after the last, jumps past the call) |
+| `<S-Tab>` | Jump back to the previous placeholder |
+| `<BS>` | Delete the placeholder, stay in Insert mode at that spot |
+| `<Esc>` | Bail out to Normal mode, placeholder text kept as-is |
+| `<C-g>` | Toggle Select ↔ Visual mode (so `h`/`l`/`w` move instead of replacing) |
 
 ## Text Objects & Surround (mini.nvim)
 
@@ -278,9 +295,57 @@ under `stdpath('cache')/jdtls-workspace/<project>`.
 | `<leader>jo` | Organize imports |
 | `<leader>jt` | Run/debug the current test class |
 | `<leader>jm` | Run/debug the nearest test method |
+| `<leader>jg` | Generate menu: constructor, getters/setters, `toString()`, `equals()`/`hashCode()` from the class's fields (like IntelliJ's Alt+Insert) |
+
+### Java snippets
+
+Type the trigger and accept it from the completion menu with `<C-y>` (snippets show a `~` after the
+label). Then `<Tab>`/`<S-Tab>` move between placeholders. These come from
+`lua/custom/snippets/java.lua` and work even without jdtls. jdtls also sends its own Eclipse-style
+templates (`sysout`, `foreach`, ...), but these snippets are ranked above them.
+
+**How the names work:**
+1. Well-known IntelliJ abbreviations stay as they are: `sout`, `souf`, `soutv`, `psvm`, `fori`, `psf`.
+2. Everything else is a **family prefix + variant letter**: `try` → `tryc`/`tryf`/`tryr`,
+   `if` → `ife`/`ifn`/`ifnn`, `thr` → `thria`/`thris`/`thrus`.
+3. A suffix letter means the same thing in every family: `f` = format/finally,
+   `r` = reverse/resources, `e` = else/enhanced, `n` = null, `nn` = not null.
+
+| Family | Triggers |
+|---|---|
+| Print (`so` = out, `se` = err) | `sout` println · `souf` printf · `soutv` `"x = " + x` · `soutm` `"Class.method"` · `soutp` all method params · `serr` · `serf` |
+| Entry point | `psvm` / `main` |
+| Loops | `fori` index · `forr` reverse index · `fore` for-each · `wh` while · `dowh` do-while |
+| Conditionals | `ife` if/else · `ifn` if null · `ifnn` if not null · `elif` else-if |
+| Switch | `sw` arrow switch · `swe` switch expression (`var x = switch …`) |
+| Try | `tryc` catch · `tryf` finally · `trycf` catch+finally · `tryr` try-with-resources |
+| Throw | `thr` any `…Exception` · `thria` IllegalArgument · `thris` IllegalState · `thrus` UnsupportedOperation |
+| Types (name from file) | `cls` class · `intf` interface · `enm` enum · `rec` record |
+| Constructors | `ctor` no-arg · `ctorp` one param + `this.x = x` |
+| Fields / constants | `prv` private · `prf` private final · `psf` public static final · `prsf` private static final |
+| Accessors | `get` getter · `is` boolean getter · `set` setter · `gs` getter+setter · `fgs` field+getter+setter |
+| Methods | `m` public · `mp` private · `ms` public static |
+| Collections (impl initials) | `al` ArrayList · `hm` HashMap · `hs` HashSet |
+| Misc | `ov` `@Override` · `test` JUnit 5 `@Test` method · `rnn` `Objects.requireNonNull(x, "x")` · `scan` `Scanner(System.in)` |
+
+In the accessor snippets you type the type and the field name once. The method names are built
+as you type: typing `age` gives `getAge`/`setAge`.
+
+**Snippet or `<leader>jg`?** Use the snippet when the field doesn't exist yet: `fgs` writes the
+field and both accessors in one go. Use `<leader>jg` when the fields already exist and you want
+a constructor or accessors for several of them. It shows a picker of the real fields and needs
+jdtls to be attached.
 
 Debugging a `main` method or a test uses the same shared [DAP](#debugging-dap) keymaps
 (`<F5>`, `<leader>b`, ...) once jdtls generates a run configuration.
+
+**"Security Warning! The gradle wrapper … could be malicious"**: jdtls only trusts
+`gradle-wrapper.jar` files whose sha256 is on Gradle's published list, and it treats every
+wrapper as untrusted if it can't download that list (offline, proxy). If you trust the project,
+run `:JdtTrustGradleWrapper`. It saves the jar's checksum to
+`stdpath('data')/jdtls-trusted-gradle-wrappers.json` and restarts jdtls, and the checksum stays
+trusted for every project that uses the same wrapper. If the warning is still there after
+that, run `:JdtWipeDataAndRestart`.
 
 ## C / C++
 

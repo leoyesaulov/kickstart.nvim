@@ -28,9 +28,10 @@ table is currently `Disabled`.
 | `<leader>hr` | Normal, Visual | Git: reset hunk | gitsigns.lua:40-45 | Active |
 | `<leader>hs` | Normal, Visual | Git: stage hunk | gitsigns.lua:37-44 | Active |
 | `<leader>hu` | Normal | Git: undo stage hunk | gitsigns.lua:47 | Active |
-| `<leader>jm` | Normal (Java buffers) | Java: run/debug nearest test method | custom/plugins/java.lua:93 | Active |
-| `<leader>jo` | Normal (Java buffers) | Java: organize imports | custom/plugins/java.lua:91 | Active |
-| `<leader>jt` | Normal (Java buffers) | Java: run/debug test class | custom/plugins/java.lua:92 | Active |
+| `<leader>jg` | Normal (Java buffers) | Java: generate menu (constructors, getters/setters, toString, equals/hashCode from fields) | custom/plugins/java.lua:174 | Active |
+| `<leader>jm` | Normal (Java buffers) | Java: run/debug nearest test method | custom/plugins/java.lua:173 | Active |
+| `<leader>jo` | Normal (Java buffers) | Java: organize imports | custom/plugins/java.lua:171 | Active |
+| `<leader>jt` | Normal (Java buffers) | Java: run/debug test class | custom/plugins/java.lua:172 | Active |
 | `<leader>q` | Normal | Open diagnostic quickfix list | init.lua:177 | Active |
 | `<leader>s.` | Normal | Search recent files | init.lua:437 | Active |
 | `<leader>s/` | Normal | Grep across open files | init.lua:451-456 | Active |
@@ -59,7 +60,9 @@ table is currently `Disabled`.
 | `\` | Normal (inside Neo-tree) | Close Neo-tree window | neo-tree.lua:18-20 | Active |
 | `]c` | Normal | Jump to next git change | gitsigns.lua:19-25 | Active |
 | `[c` | Normal | Jump to previous git change | gitsigns.lua:27-33 | Active |
+| `<BS>` | Select (snippet placeholder) | Delete placeholder, continue in Insert mode | Vim built-in | Active |
 | `<C-e>` | Insert (blink.cmp) | Hide completion menu | blink.cmp default | Active |
+| `<C-g>` | Select (snippet placeholder) | Toggle Select ↔ Visual mode (motions move instead of replace) | Vim built-in | Active |
 | `<C-h>` | Normal | Move focus to window left | init.lua:197 | Active |
 | `<C-j>` | Normal | Move focus to window below | init.lua:199 | Active |
 | `<C-k>` | Normal | Move focus to window above | init.lua:200 | Active |
@@ -68,9 +71,10 @@ table is currently `Disabled`.
 | `<C-n>` / `<C-p>`, `<Down>` / `<Up>` | Insert (blink.cmp) | Select next / previous completion item | blink.cmp default | Active |
 | `<C-space>` | Insert (blink.cmp) | Open completion menu / show docs if open | blink.cmp default | Active |
 | `<C-y>` | Insert (blink.cmp) | Accept selected completion | blink.cmp default | Active |
-| `<Tab>` / `<S-Tab>` | Insert (blink.cmp) | Move through snippet placeholders | blink.cmp default | Active |
+| `<Tab>` / `<S-Tab>` | Insert, Select (blink.cmp) | Move through snippet placeholders (keeps current placeholder text) | blink.cmp default | Active |
 | `<Tab>` | Normal (bufferline) | Next buffer tab | custom/plugins/ui.lua:13 | Active |
 | `<S-Tab>` | Normal (bufferline) | Previous buffer tab | custom/plugins/ui.lua:14 | Active |
+| `<Esc>` | Select (snippet placeholder) | Exit to Normal mode, keep placeholder text | Vim built-in | Active |
 | `<F1>` | — | Debug: step into | debug.lua:35-41 | Active |
 | `<F2>` | — | Debug: step over | debug.lua:42-48 | Active |
 | `<F3>` | — | Debug: step out | debug.lua:49-55 | Active |
