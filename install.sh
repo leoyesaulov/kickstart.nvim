@@ -137,6 +137,39 @@ ensure_pdf_viewer() {
   fi
 }
 
+ensure_molten_venv() {
+  # molten.nvim is a Python remote plugin; lua/custom/plugins/jupyter.lua points
+  # g:python3_host_prog at this venv (pynvim + jupyter_client) and borrows its jupytext CLI.
+  local venv="${XDG_DATA_HOME:-$HOME/.local/share}/${NVIM_APPNAME:-nvim}/molten-venv"
+  local py=python3
+
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    # The Xcode CLT python3 is too old for current pynvim/jupyter; use Homebrew's.
+    if ! command -v brew >/dev/null 2>&1; then
+      echo "WARNING brew not found — skipping the Jupyter/molten venv." >&2
+      return
+    fi
+    brew list python >/dev/null 2>&1 || {
+      echo "Installing python via Homebrew (Jupyter/molten venv)..."
+      brew install python
+    }
+    py="$(brew --prefix)/bin/python3"
+  elif ! command -v python3 >/dev/null 2>&1; then
+    echo "WARNING python3 not found — skipping the Jupyter/molten venv." >&2
+    return
+  fi
+
+  if [[ ! -x "$venv/bin/python" ]]; then
+    echo "Creating Jupyter/molten venv at $venv..."
+    "$py" -m venv "$venv"
+  fi
+  echo "Installing/updating pynvim, jupyter_client, ipykernel, jupytext, nbformat in $venv..."
+  "$venv/bin/pip" install --quiet --upgrade pip pynvim jupyter_client ipykernel jupytext nbformat pyperclip
+  # molten writes kernel connection files here but doesn't create the dir on a fresh machine.
+  "$venv/bin/python" -c 'import os, jupyter_core.paths as p; os.makedirs(p.jupyter_runtime_dir(), exist_ok=True)'
+  echo "OK      Jupyter/molten venv ready ($venv)"
+}
+
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/${NVIM_APPNAME:-nvim}"
 
@@ -154,6 +187,8 @@ ensure_pkg lazygit lazygit lazygit "LazyGit integration"
 ensure_nerd_font
 ensure_tex_distribution
 ensure_pdf_viewer
+ensure_pkg magick imagemagick imagemagick "image.nvim renders notebook plots inline"
+ensure_molten_venv
 
 if [[ "$repo_dir" == "$config_dir" ]]; then
   echo "Repo is already checked out at $config_dir — nothing to link."
@@ -185,3 +220,4 @@ link lua
 
 echo "Done. Config dir: $config_dir"
 echo "Next: open nvim and let Lazy + Mason finish installing (:Lazy, :Mason), then run :checkhealth."
+echo "      If :MoltenInit is missing afterwards, run :UpdateRemotePlugins and restart nvim."

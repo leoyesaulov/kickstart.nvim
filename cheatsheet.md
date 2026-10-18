@@ -2,6 +2,22 @@
 
 Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin manager: lazy.nvim
 
+### Navigating this file in Neovim
+
+There's no markdown LSP configured, so `gd` won't follow `[text](#anchor)` links. Use built-ins instead:
+
+| Key / Command | Action |
+|---|---|
+| `gO` | Open an outline of all headings in the location list — `<CR>` jumps to one (Neovim 0.11+) |
+| `/^## Basics<CR>` | Jump to a chapter by searching for its heading |
+| `yi[` then `/<C-r>"<CR>`, `n` | From a TOC entry: yank the link text, search for it, `n` until you land on the heading |
+| `<leader>/` | Fuzzy-search the buffer (Telescope) — type a chapter name, `<CR>` to jump |
+| `]]` / `[[` | Next / previous heading |
+| `<C-o>` / `<C-i>` | Jump back / forward through the jumplist — returns you to the TOC after any of the above |
+| ` `` ` | Toggle between current position and the last jump |
+| `gg` | Top of file (the TOC is right below) |
+| `mt` … `'t` | Set mark `t` at the TOC, return to it from anywhere |
+
 ## Table of Contents
 1. [Basics](#basics)
 2. [Core / Window Navigation](#core--window-navigation)
@@ -21,13 +37,14 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 16. [Testing (neotest)](#testing-neotest)
 17. [Markdown Preview (markview.nvim)](#markdown-preview-markviewnvim)
 18. [Python](#python)
-19. [Java](#java)
-20. [C / C++](#c--c)
-21. [Web Dev](#web-dev)
-22. [Docker](#docker)
-23. [Shell](#shell)
-24. [LaTeX](#latex)
-25. [Misc Commands](#misc-commands)
+19. [Jupyter Notebooks (molten.nvim)](#jupyter-notebooks-moltennvim)
+20. [Java](#java)
+21. [C / C++](#c--c)
+22. [Web Dev](#web-dev)
+23. [Docker](#docker)
+24. [Shell](#shell)
+25. [LaTeX](#latex)
+26. [Misc Commands](#misc-commands)
 
 ---
 
@@ -281,6 +298,87 @@ Active by default (loaded eagerly, no filetype trigger needed) — renders markd
 - `<leader>cv` — open the venv-selector picker (poetry/conda/virtualenv/pipenv); updates pyright's resolved interpreter.
 - Debugging: debugpy via the shared [DAP](#debugging-dap) keymaps (`<F5>`, `<leader>b`, ...).
 - Testing: [neotest](#testing-neotest) (`<leader>tr`/`<leader>tf`/`<leader>td`/...), debug-nearest shares the debugpy adapter above.
+- Notebooks: see [Jupyter Notebooks](#jupyter-notebooks-moltennvim) — the same `<leader>m*` keys run `# %%` cells in plain `.py` files too.
+
+## Jupyter Notebooks (molten.nvim)
+
+Run notebooks inside Neovim, no browser (`lua/custom/plugins/jupyter.lua`). Three plugins work
+together:
+
+- **jupytext.nvim** — opening `foo.ipynb` shows it as plain Python in *percent* format: each cell
+  starts with a `# %%` line, markdown cells are `# %% [markdown]` followed by `#` comment lines.
+  pyright, ruff, completion and treesitter all work as in any `.py` file. `:w` writes the code back
+  into `foo.ipynb` and keeps the outputs already stored in it.
+- **molten.nvim** — talks to a real Jupyter kernel. Short output shows as virtual text under the
+  cell, longer output in a float (`<leader>mo`).
+- **image.nvim** — draws plots and images inline. Only enabled in **Kitty or Ghostty** (detected
+  from `$KITTY_WINDOW_ID` / `$TERM` / `$TERM_PROGRAM` at startup). In other terminals output is
+  text-only, so a matplotlib plot shows up as `<Figure ...>`. Inside tmux, add
+  `set -g allow-passthrough on` to `~/.tmux.conf`.
+
+`install.sh` sets up a dedicated venv at `~/.local/share/nvim/molten-venv` (pynvim,
+jupyter_client, ipykernel, jupytext, nbformat). Neovim uses it as its Python host. Its `python3`
+kernel is good enough for scratch work without any project setup.
+
+### Basic workflow
+
+1. `nvim foo.ipynb` — the notebook opens as `# %%` cells.
+2. `<leader>mi` — pick a kernel (`python3`, or your project's kernel, see below). Wait for
+   `Kernel 'python3' ... is ready`.
+3. Move with `]x` / `[x`. Run the cell under the cursor with `<leader>mr`, or use `<leader>mn` to
+   run it and jump to the next one (like Shift-Enter in Jupyter). `<leader>ma` runs everything.
+4. Output appears under the cell. `<leader>mo` opens it in a float (do it again to enter the float
+   and scroll; `:q` or `<leader>mh` closes it).
+5. Add cells with `<leader>mj` (below) / `<leader>mk` (above). Edit code like any Python file.
+6. `:w` saves the code into `foo.ipynb`. Then `<leader>me` writes the **outputs** into it too, so
+   they're there when someone opens it in Jupyter or GitHub. Outputs are *not* exported
+   automatically.
+7. `<leader>ms` restarts the kernel (state lost), `<leader>mx` interrupts a long-running cell,
+   `<leader>mq` stops the kernel.
+
+**New notebook:** write `foo.py` with `# %%` cells and run it right there (no `.ipynb` needed), or
+convert it: `jupytext --to ipynb --set-kernel python3 foo.py`. `jupytext` lives in the molten venv:
+`~/.local/share/nvim/molten-venv/bin/jupytext`.
+
+**Use a project's venv (its packages) as the kernel:** once per venv, with the venv activated:
+
+```sh
+pip install ipykernel
+python -m ipykernel install --user --name myproject
+```
+
+Then `<leader>mi` lists `myproject`.
+
+| Key | Mode | Action |
+|---|---|---|
+| `<leader>mi` | Normal | Init kernel (pick from installed kernels) |
+| `<leader>mr` | Normal | Run current cell |
+| `<leader>mr` | Visual | Run selection |
+| `<leader>mn` | Normal | Run cell, jump to next |
+| `<leader>ml` | Normal | Run current line |
+| `<leader>ma` | Normal | Run all cells |
+| `<leader>mA` | Normal | Run all cells above the cursor |
+| `]x` / `[x` | Normal | Next / previous cell |
+| `<leader>mj` / `<leader>mk` | Normal | New cell below / above |
+| `<leader>mo` | Normal | Open output float (again: enter it) |
+| `<leader>mh` | Normal | Hide output float |
+| `<leader>md` | Normal | Delete the cell's output |
+| `<leader>mx` | Normal | Interrupt kernel |
+| `<leader>ms` | Normal | Restart kernel |
+| `<leader>mq` | Normal | Stop kernel |
+| `<leader>me` | Normal | Export outputs into the `.ipynb` |
+
+Markdown cells and cells that only contain comments are skipped when running.
+
+**Gotchas / troubleshooting**
+- While `foo.ipynb` is open, jupytext.nvim keeps a temporary `foo.py` next to it and deletes it on
+  close. If a `foo.py` **already exists** there, it is opened *instead of* the notebook's content
+  and left alone. Rename one of them if they're unrelated.
+- A notebook with no `kernelspec` in its metadata fails to open. Fix it with
+  `jupytext --set-kernel python3 foo.ipynb`.
+- `E492: Not an editor command: MoltenInit` → run `:UpdateRemotePlugins`, restart nvim.
+- `:checkhealth provider` should show the molten venv's Python with pynvim; `:checkhealth molten`
+  checks jupyter_client and the image provider.
 
 ## Java
 
@@ -400,3 +498,5 @@ zathura, macOS falls back to Skim/Preview).
 | `:Trouble` | Open the problems panel |
 | `:ToggleTerm` | Open the integrated terminal |
 | `:LazyGit` | Open the floating lazygit panel |
+| `:MoltenInit` | Start a Jupyter kernel for the current buffer |
+| `:MoltenInfo` | Show molten's kernels and status |
