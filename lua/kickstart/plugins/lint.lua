@@ -12,6 +12,21 @@ return {
         bash = { 'shellcheck' },
       }
 
+      -- Relax MD013 (line length) to 150 via lua/kickstart/markdownlint.jsonc, unless the
+      -- project has its own markdownlint config (markdownlint-cli reads those from cwd).
+      local md_config = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':h:h') .. '/markdownlint.jsonc'
+      lint.linters.markdownlint.args = {
+        function()
+          for _, f in ipairs { '.markdownlint.jsonc', '.markdownlint.json', '.markdownlint.yaml', '.markdownlint.yml', '.markdownlintrc' } do
+            if vim.uv.fs_stat(f) then
+              return '--stdin'
+            end
+          end
+          return '--config=' .. md_config
+        end,
+        '--stdin',
+      }
+
       -- To allow other plugins to add linters to require('lint').linters_by_ft,
       -- instead set linters_by_ft like this:
       -- lint.linters_by_ft = lint.linters_by_ft or {}

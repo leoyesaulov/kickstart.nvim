@@ -1,0 +1,7 @@
+// Default markdownlint config used by nvim-lint (lua/kickstart/plugins/lint.lua) when the
+// project being edited has no markdownlint config of its own.
+{
+  "default": true,
+  // Only flag lines past ~150 chars instead of the stock 80.
+  "MD013": { "line_length": 150 }
+}
