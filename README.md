@@ -145,6 +145,23 @@ examples of adding popularly requested plugins.
 
 [The Only Video You Need to Get Started with Neovim](https://youtu.be/m8C0Cq9Uv9o)
 
+### Testing
+
+```sh
+make test       # everything below
+make lint       # stylua --check, shellcheck install.sh, bash/zsh/fish -n on the install scripts
+make smoke      # headless startup + one fixture per filetype + force-load every plugin; fails on any error
+make keymaps    # every keymap the config defines must have a row in bindings.md
+make clean      # delete the sandbox
+```
+
+Tests run in a sandbox under `.tests/` (its own XDG config/data/state/cache dirs), so they never
+touch your real `~/.config/nvim` or `~/.local/share/nvim`. The first run installs plugins at
+`lazy-lock.json`'s commits and compiles treesitter parsers (`make deps`); later runs reuse them.
+Mason installs are switched off during tests. Linters that aren't installed locally are skipped
+with a warning (`brew install stylua shellcheck` / `pacman -S stylua shellcheck`). CI
+(`.github/workflows/tests.yml`) runs them all on latest Arch Linux and latest macOS.
+
 ### FAQ
 
 * What should I do if I already have a pre-existing Neovim configuration?

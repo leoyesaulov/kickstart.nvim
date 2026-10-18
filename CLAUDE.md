@@ -10,6 +10,9 @@ or `lua/custom/plugins/*.lua` — update BOTH of these together:
 - `cheatsheet.md` — narrative, topic-grouped quick-reference guide
 - `bindings.md` — flat table of every binding, sorted by key, for quick lookup/grep
 
+Run `make keymaps` afterwards: it fails if any keymap the config defines is missing from
+`bindings.md`, or if a row's Active/Disabled status disagrees with `init.lua`.
+
 Keep the "disabled" sections in both files accurate to which `require(...)` lines are actually
 commented out in `init.lua`'s `lazy.setup { ... }` call — don't list a binding as active if its
 plugin isn't loaded, and don't list it as disabled if it is.
