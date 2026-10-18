@@ -56,6 +56,11 @@ return {
           if not vim.bo.modifiable then
             return
           end
+          -- Jupyter notebooks open as markdown (lua/custom/plugins/jupyter.lua); markdownlint's
+          -- style rules are noise on course notebooks. Their code cells get ruff via otter.
+          if vim.api.nvim_buf_get_name(0):match '%.ipynb$' then
+            return
+          end
           local names = lint.linters_by_ft[vim.bo.filetype]
           if not names then
             return

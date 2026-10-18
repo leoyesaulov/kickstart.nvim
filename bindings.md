@@ -32,22 +32,22 @@ table is currently `Disabled`.
 | `<leader>jm` | Normal (Java buffers) | Java: run/debug nearest test method | custom/plugins/java.lua:182 | Active |
 | `<leader>jo` | Normal (Java buffers) | Java: organize imports | custom/plugins/java.lua:180 | Active |
 | `<leader>jt` | Normal (Java buffers) | Java: run/debug test class | custom/plugins/java.lua:181 | Active |
-| `<leader>mA` | Normal | Notebook: run all cells above the cursor (molten) | custom/plugins/jupyter.lua:140 | Active |
-| `<leader>ma` | Normal | Notebook: run all cells (molten) | custom/plugins/jupyter.lua:137 | Active |
-| `<leader>md` | Normal | Notebook: delete output of the cell under the cursor | custom/plugins/jupyter.lua:145 | Active |
-| `<leader>me` | Normal | Notebook: export outputs into the `.ipynb` file | custom/plugins/jupyter.lua:149 | Active |
-| `<leader>mh` | Normal | Notebook: hide output window | custom/plugins/jupyter.lua:144 | Active |
-| `<leader>mi` | Normal | Notebook: init kernel (pick from installed kernels) | custom/plugins/jupyter.lua:132 | Active |
-| `<leader>mj` | Normal | Notebook: insert new `# %%` cell below, start typing | custom/plugins/jupyter.lua:150 | Active |
-| `<leader>mk` | Normal | Notebook: insert new `# %%` cell above, start typing | custom/plugins/jupyter.lua:153 | Active |
-| `<leader>ml` | Normal | Notebook: run current line | custom/plugins/jupyter.lua:136 | Active |
-| `<leader>mn` | Normal | Notebook: run cell and jump to next (Shift-Enter) | custom/plugins/jupyter.lua:135 | Active |
-| `<leader>mo` | Normal | Notebook: open output window (press again to enter it) | custom/plugins/jupyter.lua:143 | Active |
-| `<leader>mq` | Normal | Notebook: stop kernel (`:MoltenDeinit`) | custom/plugins/jupyter.lua:148 | Active |
-| `<leader>mr` | Normal | Notebook: run current cell | custom/plugins/jupyter.lua:133 | Active |
-| `<leader>mr` | Visual | Notebook: run selection | custom/plugins/jupyter.lua:134 | Active |
-| `<leader>ms` | Normal | Notebook: restart kernel | custom/plugins/jupyter.lua:147 | Active |
-| `<leader>mx` | Normal | Notebook: interrupt kernel | custom/plugins/jupyter.lua:146 | Active |
+| `<leader>mA` | Normal | Notebook: run all cells above the cursor (molten) | custom/plugins/jupyter.lua:229 | Active |
+| `<leader>ma` | Normal | Notebook: run all cells (molten) | custom/plugins/jupyter.lua:226 | Active |
+| `<leader>md` | Normal | Notebook: delete output of the cell under the cursor | custom/plugins/jupyter.lua:235 | Active |
+| `<leader>me` | Normal | Notebook: export outputs into the `.ipynb` file | custom/plugins/jupyter.lua:239 | Active |
+| `<leader>mh` | Normal | Notebook: hide output window | custom/plugins/jupyter.lua:234 | Active |
+| `<leader>mi` | Normal | Notebook: init kernel (pick from installed kernels) | custom/plugins/jupyter.lua:221 | Active |
+| `<leader>mj` | Normal | Notebook: insert new code cell below (`` ```python `` fence, or `# %%` in .py), start typing | custom/plugins/jupyter.lua:240 | Active |
+| `<leader>mk` | Normal | Notebook: insert new code cell above (`` ```python `` fence, or `# %%` in .py), start typing | custom/plugins/jupyter.lua:243 | Active |
+| `<leader>ml` | Normal | Notebook: run current line | custom/plugins/jupyter.lua:225 | Active |
+| `<leader>mn` | Normal | Notebook: run cell and jump to next (Shift-Enter) | custom/plugins/jupyter.lua:224 | Active |
+| `<leader>mo` | Normal | Notebook: open output window (press again to enter it) | custom/plugins/jupyter.lua:233 | Active |
+| `<leader>mq` | Normal | Notebook: stop kernel (`:MoltenDeinit`) | custom/plugins/jupyter.lua:238 | Active |
+| `<leader>mr` | Normal | Notebook: run current cell | custom/plugins/jupyter.lua:222 | Active |
+| `<leader>mr` | Visual | Notebook: run selection | custom/plugins/jupyter.lua:223 | Active |
+| `<leader>ms` | Normal | Notebook: restart kernel | custom/plugins/jupyter.lua:237 | Active |
+| `<leader>mx` | Normal | Notebook: interrupt kernel | custom/plugins/jupyter.lua:236 | Active |
 | `<leader>q` | Normal | Open diagnostic quickfix list | init.lua:177 | Active |
 | `<leader>s.` | Normal | Search recent files | init.lua:442 | Active |
 | `<leader>s/` | Normal | Grep across open files | init.lua:456-461 | Active |
@@ -76,8 +76,8 @@ table is currently `Disabled`.
 | `\` | Normal (inside Neo-tree) | Close Neo-tree window | neo-tree.lua:18-20 | Active |
 | `]c` | Normal | Jump to next git change | gitsigns.lua:19-25 | Active |
 | `[c` | Normal | Jump to previous git change | gitsigns.lua:27-33 | Active |
-| `]x` | Normal | Notebook: jump to next `# %%` cell | custom/plugins/jupyter.lua:156 | Active |
-| `[x` | Normal | Notebook: jump to previous `# %%` cell | custom/plugins/jupyter.lua:159 | Active |
+| `]x` | Normal | Notebook: jump to next code cell (`` ```python `` fence, or `# %%` in .py) | custom/plugins/jupyter.lua:246 | Active |
+| `[x` | Normal | Notebook: jump to previous code cell (`` ```python `` fence, or `# %%` in .py) | custom/plugins/jupyter.lua:249 | Active |
 | `<BS>` | Select (snippet placeholder) | Delete placeholder, continue in Insert mode | Vim built-in | Active |
 | `<C-e>` | Insert (blink.cmp) | Hide completion menu | blink.cmp default | Active |
 | `<C-g>` | Select (snippet placeholder) | Toggle Select ↔ Visual mode (motions move instead of replace) | Vim built-in | Active |

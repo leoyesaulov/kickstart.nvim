@@ -1,7 +1,9 @@
--- Jupyter notebooks without a browser: jupytext.nvim turns `.ipynb` into a plain `# %%`
--- (percent-style) Python buffer and writes it back on save, molten.nvim runs those cells
--- against a real Jupyter kernel and shows the output inline, and image.nvim draws plots in the
--- terminal (Kitty/Ghostty only — elsewhere molten falls back to text output).
+-- Jupyter notebooks without a browser: jupytext.nvim turns `.ipynb` into a markdown buffer
+-- (markdown cells as plain markdown, code cells as ```python fences) and writes it back on save,
+-- markview renders the markdown, otter.nvim gives the code cells Python LSP (pyright + ruff),
+-- molten.nvim runs those cells against a real Jupyter kernel and shows the output inline, and
+-- image.nvim draws plots in the terminal (Kitty/Ghostty only — elsewhere molten falls back to
+-- text output). The same cell keymaps also run `# %%` cells in plain `.py` files.
 --
 -- molten is a Python remote plugin: it needs pynvim + jupyter_client in Neovim's Python host.
 -- install.sh creates a dedicated venv for that at stdpath('data')/molten-venv.
@@ -20,40 +22,104 @@ local images_supported = (vim.env.KITTY_WINDOW_ID or '') ~= ''
   or vim.env.TERM == 'xterm-ghostty'
   or vim.env.TERM_PROGRAM == 'ghostty'
 
--- Cell helpers. A cell starts at a `# %%` line and runs until the next one (or EOF); anything
--- above the first marker counts as a cell too.
+local function is_notebook(buf)
+  return vim.api.nvim_buf_get_name(buf or 0):match '%.ipynb$' ~= nil
+end
+
+-- Cell helpers. Two buffer layouts:
+--   markdown (notebooks): a code cell is a ```python fence; the prose between fences is markdown
+--     cells and not a navigation/run target. Fences inside jupytext's `<!-- #region -->` blocks
+--     are code samples within a markdown cell, not cells.
+--   anything else (`.py`): a cell starts at a `# %%` line and runs until the next one (or EOF);
+--     anything above the first marker counts as a cell too. `# %% [markdown]` cells never run.
+-- Each cell is { head = first line, last = last line, s/e = code lines to run, code = runnable }.
 local CELL = '^# %%'
+local FENCE_OPEN = '^```%s*python%f[^%w_]'
+local FENCE_CLOSE = '^```%s*$'
 
 local function lines()
   return vim.api.nvim_buf_get_lines(0, 0, -1, false)
 end
 
--- Returns header (marker line, or 1 if there is none) and last line of the cell holding `lnum`.
-local function cell_bounds(buf_lines, lnum)
-  local s, e = lnum, lnum
-  while s > 1 and not buf_lines[s]:match(CELL) do
-    s = s - 1
+local function fence_cells(buf_lines)
+  local cells, in_region, i = {}, false, 1
+  while i <= #buf_lines do
+    local l = buf_lines[i]
+    if l:match '^<!%-%- #region' then
+      in_region = true
+    elseif l:match '^<!%-%- #endregion' then
+      in_region = false
+    elseif not in_region and l:match(FENCE_OPEN) then
+      local close = i + 1
+      while close <= #buf_lines and not buf_lines[close]:match(FENCE_CLOSE) do
+        close = close + 1
+      end
+      table.insert(cells, { head = i, last = math.min(close, #buf_lines), s = i + 1, e = close - 1, code = true })
+      i = close
+    end
+    i = i + 1
   end
-  while e < #buf_lines and not buf_lines[e + 1]:match(CELL) do
-    e = e + 1
-  end
-  return s, e
+  return cells
 end
 
--- Runs one cell, skipping `# %% [markdown]` cells and cells with nothing but comments/blanks.
-local function eval_cell(buf_lines, s, e)
-  if buf_lines[s]:match(CELL) then
-    if buf_lines[s]:match '%[markdown%]' then
-      return
+local function percent_cells(buf_lines)
+  local cells = {}
+  for i, l in ipairs(buf_lines) do
+    if l:match(CELL) then
+      table.insert(cells, { head = i, s = i + 1, code = not l:match '%[markdown%]' })
+    elseif i == 1 then
+      table.insert(cells, { head = 1, s = 1, code = true }) -- code above the first marker
     end
-    s = s + 1
   end
+  for n, c in ipairs(cells) do
+    c.last = n < #cells and cells[n + 1].head - 1 or #buf_lines
+    c.e = c.last
+  end
+  return cells
+end
+
+local function cells(buf_lines)
+  return vim.bo.filetype == 'markdown' and fence_cells(buf_lines) or percent_cells(buf_lines)
+end
+
+-- The cell holding `lnum`, or nil (markdown prose between fences).
+local function cell_at(all, lnum)
+  for _, c in ipairs(all) do
+    if c.head <= lnum and lnum <= c.last then
+      return c
+    end
+  end
+end
+
+-- molten draws output under the last evaluated line; off_by_1 pushes it one further, past the
+-- closing ``` fence. In `# %%` buffers that would land past the next cell's marker instead, so
+-- keep the (global) option in step with the buffer type.
+local function sync_output_offset()
+  local want = vim.bo.filetype == 'markdown'
+  if vim.g.molten_virt_lines_off_by_1 == want then
+    return
+  end
+  vim.g.molten_virt_lines_off_by_1 = want -- read when molten initializes
+  -- Once molten is running it only listens to MoltenUpdateOption. MoltenRunningKernels doesn't
+  -- initialize molten, so a buffer switch never starts it as a side effect.
+  if vim.fn.exists '*MoltenRunningKernels' == 1 and #vim.fn.MoltenRunningKernels(false) > 0 then
+    vim.fn.MoltenUpdateOption('virt_lines_off_by_1', want)
+  end
+end
+
+-- Runs one cell, skipping markdown cells and cells with nothing but comments/blanks.
+local function eval_cell(buf_lines, c)
+  if not c.code then
+    return
+  end
+  local s, e = c.s, c.e
   -- Drop trailing blank lines so output lands right under the code, not under the gap.
-  while e > s and not buf_lines[e]:match '%S' do
+  while e >= s and not buf_lines[e]:match '%S' do
     e = e - 1
   end
   for i = s, e do
     if buf_lines[i]:match '%S' and not buf_lines[i]:match '^%s*#' then
+      sync_output_offset()
       vim.fn.MoltenEvaluateRange(s, e)
       return
     end
@@ -62,54 +128,69 @@ end
 
 local function run_cell()
   local buf_lines = lines()
-  eval_cell(buf_lines, cell_bounds(buf_lines, vim.fn.line '.'))
-end
-
--- Runs every cell whose header is above `stop` (all cells when `stop` is nil).
-local function run_cells(stop)
-  local buf_lines = lines()
-  local lnum = 1
-  while lnum <= #buf_lines and (not stop or lnum < stop) do
-    local s, e = cell_bounds(buf_lines, lnum)
-    eval_cell(buf_lines, s, e)
-    lnum = e + 1
+  local c = cell_at(cells(buf_lines), vim.fn.line '.')
+  if c then
+    eval_cell(buf_lines, c)
+  else
+    vim.notify('Not in a code cell', vim.log.levels.INFO)
   end
 end
 
-local function goto_cell(dir)
+-- Runs every cell that starts above `stop` (all cells when `stop` is nil).
+local function run_cells(stop)
   local buf_lines = lines()
+  for _, c in ipairs(cells(buf_lines)) do
+    if stop and c.head >= stop then
+      break
+    end
+    eval_cell(buf_lines, c)
+  end
+end
+
+-- Jumps to the next/previous cell: its `# %%` marker, or the first code line of a fence.
+local function goto_cell(dir)
+  local all = cells(lines())
   local cur = vim.fn.line '.'
-  if dir > 0 then
-    for i = cur + 1, #buf_lines do
-      if buf_lines[i]:match(CELL) then
-        return vim.api.nvim_win_set_cursor(0, { i, 0 })
-      end
+  local here = cell_at(all, cur)
+  local from = dir > 0 and #all or 1
+  local to = dir > 0 and 1 or #all
+  local target
+  for n = to, from, dir > 0 and 1 or -1 do
+    local c = all[n]
+    if (dir > 0 and c.head > cur) or (dir < 0 and c.head < (here and here.head or cur)) then
+      target = c
+      break
     end
-  else
-    local s = cell_bounds(buf_lines, cur)
-    for i = s - 1, 1, -1 do
-      if buf_lines[i]:match(CELL) then
-        return vim.api.nvim_win_set_cursor(0, { i, 0 })
-      end
-    end
+  end
+  if target then
+    local fenced = vim.bo.filetype == 'markdown'
+    vim.api.nvim_win_set_cursor(0, { fenced and math.min(target.s, target.last) or target.head, 0 })
   end
 end
 
 local function run_cell_and_next()
-  run_cell()
+  if cell_at(cells(lines()), vim.fn.line '.') then
+    run_cell()
+  end
   goto_cell(1)
 end
 
--- Inserts an empty `# %%` cell below/above the current one and starts typing in it.
+-- Inserts an empty code cell below/above the current one (or the cursor line, in markdown
+-- prose) and starts typing in it.
 local function new_cell(below)
-  local buf_lines = lines()
-  local s, e = cell_bounds(buf_lines, vim.fn.line '.')
+  local cur = vim.fn.line '.'
+  local c = cell_at(cells(lines()), cur)
+  local fenced = vim.bo.filetype == 'markdown'
   if below then
-    vim.api.nvim_buf_set_lines(0, e, e, false, { '', '# %%', '' })
-    vim.api.nvim_win_set_cursor(0, { e + 3, 0 })
+    local at = c and c.last or cur
+    local new = fenced and { '', '```python', '', '```' } or { '', '# %%', '' }
+    vim.api.nvim_buf_set_lines(0, at, at, false, new)
+    vim.api.nvim_win_set_cursor(0, { at + 3, 0 })
   else
-    vim.api.nvim_buf_set_lines(0, s - 1, s - 1, false, { '# %%', '', '' })
-    vim.api.nvim_win_set_cursor(0, { s + 1, 0 })
+    local at = (c and c.head or cur) - 1
+    local new = fenced and { '```python', '', '```', '' } or { '# %%', '', '' }
+    vim.api.nvim_buf_set_lines(0, at, at, false, new)
+    vim.api.nvim_win_set_cursor(0, { at + 2, 0 })
   end
   vim.cmd 'startinsert'
 end
@@ -125,11 +206,13 @@ return {
       vim.g.molten_image_provider = images_supported and 'image.nvim' or 'none'
       vim.g.molten_auto_open_output = false -- output float only on <leader>mo
       vim.g.molten_virt_text_output = true -- short output as virtual text under the cell
-      -- off_by_1 is for markdown/quarto (skips the closing ``` fence); in jupytext's `# %%`
-      -- buffers it would push output past the next cell's marker.
-      vim.g.molten_virt_lines_off_by_1 = false
+      vim.g.molten_virt_lines_off_by_1 = false -- per buffer type, see sync_output_offset()
       vim.g.molten_wrap_output = true
       vim.g.molten_output_win_max_height = 20
+      vim.api.nvim_create_autocmd('BufEnter', {
+        group = vim.api.nvim_create_augroup('kickstart-molten-offset', { clear = true }),
+        callback = sync_output_offset,
+      })
     end,
     config = function()
       local map = function(keys, func, desc, mode)
@@ -144,7 +227,8 @@ return {
         run_cells()
       end, 'Run [A]ll cells')
       map('<leader>mA', function()
-        run_cells(cell_bounds(lines(), vim.fn.line '.'))
+        local c = cell_at(cells(lines()), vim.fn.line '.')
+        run_cells(c and c.head or vim.fn.line '.')
       end, 'Run all cells [A]bove')
       map('<leader>mo', '<cmd>noautocmd MoltenEnterOutput<cr>', '[O]pen/enter output')
       map('<leader>mh', '<cmd>MoltenHideOutput<cr>', '[H]ide output')
@@ -167,10 +251,10 @@ return {
       end, 'Previous cell')
     end,
   },
-  { -- Open .ipynb as `# %%` Python, write it back as .ipynb on save
+  { -- Open .ipynb as markdown with ```python code cells, write it back as .ipynb on save
     'GCBallesteros/jupytext.nvim',
     lazy = false, -- must register its *.ipynb read/write autocmds before the first open
-    opts = { style = 'percent', output_extension = 'auto' },
+    opts = { style = 'markdown', output_extension = 'md', force_ft = 'markdown' },
     config = function(_, opts)
       -- jupytext.nvim json-decodes the notebook unguarded, so a missing or empty `.ipynb` (e.g.
       -- one just created with neo-tree's `a`) errors out. Seed those with an empty Python 3
@@ -195,6 +279,34 @@ return {
         return get_metadata(filename)
       end
       require('jupytext').setup(opts)
+    end,
+  },
+  { -- LSP (pyright + ruff: completion, hover, diagnostics, go-to) inside a notebook's code cells
+    'jmbuhr/otter.nvim',
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    lazy = false, -- its FileType autocmd below must exist before the first notebook opens
+    opts = {
+      -- Default is BufWritePost only; refresh pyright/ruff diagnostics while editing too.
+      lsp = { diagnostic_update_events = { 'BufWritePost', 'InsertLeave', 'TextChanged' } },
+    },
+    config = function(_, opts)
+      require('otter').setup(opts)
+      vim.api.nvim_create_autocmd('FileType', {
+        group = vim.api.nvim_create_augroup('kickstart-otter', { clear = true }),
+        pattern = 'markdown',
+        callback = function(ev)
+          -- Notebooks only: plain .md files (READMEs, notes) don't get a pyright per code block.
+          if is_notebook(ev.buf) then
+            vim.schedule(function()
+              if vim.api.nvim_buf_is_valid(ev.buf) then
+                vim.api.nvim_buf_call(ev.buf, function()
+                  require('otter').activate { 'python' }
+                end)
+              end
+            end)
+          end
+        end,
+      })
     end,
   },
   { -- Inline images (plots) via the Kitty graphics protocol

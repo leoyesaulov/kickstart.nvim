@@ -805,6 +805,19 @@ require('lazy').setup({
         scss = { 'prettierd', 'prettier', stop_after_first = true },
         json = { 'prettierd', 'prettier', stop_after_first = true },
         yaml = { 'prettierd', 'prettier', stop_after_first = true },
+        -- Jupyter notebooks open as markdown (lua/custom/plugins/jupyter.lua): format their
+        -- ```python cells with ruff. Plain .md files are left alone.
+        markdown = function(bufnr)
+          return vim.api.nvim_buf_get_name(bufnr):match '%.ipynb$' and { 'injected' } or {}
+        end,
+      },
+      formatters = {
+        injected = {
+          options = {
+            ignore_errors = true, -- a cell ruff can't parse (e.g. `%magic`) shouldn't block the rest
+            lang_to_formatters = { python = { 'ruff_format' } },
+          },
+        },
       },
     },
   },

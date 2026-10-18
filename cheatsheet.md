@@ -302,17 +302,22 @@ Active by default (loaded eagerly, no filetype trigger needed) — renders markd
 - `<leader>cv` — open the venv-selector picker (poetry/conda/virtualenv/pipenv); updates pyright's resolved interpreter.
 - Debugging: debugpy via the shared [DAP](#debugging-dap) keymaps (`<F5>`, `<leader>b`, ...).
 - Testing: [neotest](#testing-neotest) (`<leader>tr`/`<leader>tf`/`<leader>td`/...), debug-nearest shares the debugpy adapter above.
-- Notebooks: see [Jupyter Notebooks](#jupyter-notebooks-moltennvim) — the same `<leader>m*` keys run `# %%` cells in plain `.py` files too.
+- Notebooks: see [Jupyter Notebooks](#jupyter-notebooks-moltennvim) — `.ipynb` opens as markdown; the same `<leader>m*` keys run `# %%` cells in plain `.py` files too.
 
 ## Jupyter Notebooks (molten.nvim)
 
-Run notebooks inside Neovim, no browser (`lua/custom/plugins/jupyter.lua`). Three plugins work
+Run notebooks inside Neovim, no browser (`lua/custom/plugins/jupyter.lua`). Five plugins work
 together:
 
-- **jupytext.nvim** — opening `foo.ipynb` shows it as plain Python in *percent* format: each cell
-  starts with a `# %%` line, markdown cells are `# %% [markdown]` followed by `#` comment lines.
-  pyright, ruff, completion and treesitter all work as in any `.py` file. `:w` writes the code back
-  into `foo.ipynb` and keeps the outputs already stored in it.
+- **jupytext.nvim** — opening `foo.ipynb` shows it as **markdown**: markdown cells are plain
+  markdown, code cells are ```` ```python ```` fenced blocks. `:w` writes everything back into
+  `foo.ipynb` and keeps the outputs already stored in it.
+- **markview.nvim** — renders the markdown cells in normal mode (headings, bold, lists, tables,
+  code-block backgrounds); insert mode shows the raw text.
+- **otter.nvim** — gives the code cells real Python LSP: pyright + ruff run on a hidden
+  `foo.ipynb.otter.py` buffer, so completion, hover (`K`), go-to-definition, rename and ruff
+  diagnostics work inside the fences. `:w` / `<leader>f` format code cells with ruff
+  (`conform`'s `injected` formatter); the markdown is left as is. markdownlint is off for notebooks.
 - **molten.nvim** — talks to a real Jupyter kernel. Short output shows as virtual text under the
   cell, longer output in a float (`<leader>mo`).
 - **image.nvim** — draws plots and images inline. Only enabled in **Kitty or Ghostty** (detected
@@ -326,23 +331,29 @@ kernel is good enough for scratch work without any project setup.
 
 ### Basic workflow
 
-1. `nvim foo.ipynb` — the notebook opens as `# %%` cells.
+1. `nvim foo.ipynb` — the notebook opens as rendered markdown with ```` ```python ```` code cells.
 2. `<leader>mi` — pick a kernel (`python3`, or your project's kernel, see below). Wait for
    `Kernel 'python3' ... is ready`.
-3. Move with `]x` / `[x`. Run the cell under the cursor with `<leader>mr`, or use `<leader>mn` to
-   run it and jump to the next one (like Shift-Enter in Jupyter). `<leader>ma` runs everything.
+3. Move between code cells with `]x` / `[x` (lands on the first code line). Run the cell under
+   the cursor with `<leader>mr`, or use `<leader>mn` to run it and jump to the next one (like
+   Shift-Enter in Jupyter; from markdown text it just jumps to the next code cell). `<leader>ma`
+   runs everything.
 4. Output appears under the cell. `<leader>mo` opens it in a float (do it again to enter the float
    and scroll; `:q` or `<leader>mh` closes it).
-5. Add cells with `<leader>mj` (below) / `<leader>mk` (above). Edit code like any Python file.
+5. Add code cells with `<leader>mj` (below) / `<leader>mk` (above). Markdown cells are just text
+   between code cells — type anywhere outside a fence. **Two blank lines** split one markdown cell
+   into two (that's how jupytext tells them apart).
 6. `:w` saves the code into `foo.ipynb`. Then `<leader>me` writes the **outputs** into it too, so
    they're there when someone opens it in Jupyter or GitHub. Outputs are *not* exported
    automatically.
 7. `<leader>ms` restarts the kernel (state lost), `<leader>mx` interrupts a long-running cell,
    `<leader>mq` stops the kernel.
 
-**New notebook:** write `foo.py` with `# %%` cells and run it right there (no `.ipynb` needed), or
-convert it: `jupytext --to ipynb --set-kernel python3 foo.py`. `jupytext` lives in the molten venv:
-`~/.local/share/nvim/molten-venv/bin/jupytext`.
+**New notebook:** create `foo.ipynb` (e.g. neo-tree `a`) and open it — an empty Python 3 notebook
+is seeded automatically. Or write `foo.py` with `# %%` cells and run it right there with the same
+keys (no `.ipynb` needed; in `.py` files cells are `# %%` blocks and `# %% [markdown]` cells are
+skipped), or convert it: `jupytext --to ipynb --set-kernel python3 foo.py`. `jupytext` lives in
+the molten venv: `~/.local/share/nvim/molten-venv/bin/jupytext`.
 
 **Use a project's venv (its packages) as the kernel:** once per venv, with the venv activated:
 
@@ -372,12 +383,17 @@ Then `<leader>mi` lists `myproject`.
 | `<leader>mq` | Normal | Stop kernel |
 | `<leader>me` | Normal | Export outputs into the `.ipynb` |
 
-Markdown cells and cells that only contain comments are skipped when running.
+Markdown text and code cells that only contain comments are skipped when running. Fences inside
+jupytext's `<!-- #region -->` … `<!-- #endregion -->` blocks are code samples within a markdown
+cell, not cells.
 
 **Gotchas / troubleshooting**
-- While `foo.ipynb` is open, jupytext.nvim keeps a temporary `foo.py` next to it and deletes it on
-  close. If a `foo.py` **already exists** there, it is opened *instead of* the notebook's content
-  and left alone. Rename one of them if they're unrelated.
+- While `foo.ipynb` is open, jupytext.nvim keeps a temporary `foo.md` next to it and deletes it on
+  close. If a `foo.md` **already exists** there, it is opened *instead of* the notebook's content
+  and left alone. Rename one of them if they're unrelated. (A leftover `foo.py` from the old
+  `# %%` setup no longer matters and can be deleted.)
+- No completion/diagnostics in code cells → `:checkhealth vim.lsp` in the notebook should list `otter-ls`;
+  otter only activates for `.ipynb` buffers, not plain `.md` files.
 - A notebook with no `kernelspec` in its metadata fails to open. Fix it with
   `jupytext --set-kernel python3 foo.ipynb`.
 - `E492: Not an editor command: MoltenInit` → run `:UpdateRemotePlugins`, restart nvim.
