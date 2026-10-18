@@ -8,7 +8,7 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 
 | Key / Command | Action |
 |---|---|
-| `gO` | Fuzzy-find headings (Telescope, via marksman); without a symbol-capable LSP, falls back to Neovim's outline in the location list — `<CR>` jumps to one |
+| `gO` | Fuzzy-find headings (Telescope); without a symbol-capable LSP, falls back to Neovim's outline in the location list |
 | `/^## Basics<CR>` | Jump to a chapter by searching for its heading |
 | `yi[` then `/<C-r>"<CR>`, `n` | From a TOC entry: yank the link text, search for it, `n` until you land on the heading |
 | `<leader>/` | Fuzzy-search the buffer (Telescope) — type a chapter name, `<CR>` to jump |
