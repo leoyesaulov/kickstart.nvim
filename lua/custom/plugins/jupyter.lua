@@ -100,9 +100,9 @@ local function sync_output_offset()
     return
   end
   vim.g.molten_virt_lines_off_by_1 = want -- read when molten initializes
-  -- Once molten is running it only listens to MoltenUpdateOption. MoltenRunningKernels doesn't
-  -- initialize molten, so a buffer switch never starts it as a side effect.
-  if vim.fn.exists '*MoltenRunningKernels' == 1 and #vim.fn.MoltenRunningKernels(false) > 0 then
+  -- Once molten is running it only listens to MoltenUpdateOption. Gate on molten having started
+  -- a kernel, so a buffer switch never boots molten's Python host as a side effect.
+  if vim.g.kickstart_molten_started then
     vim.fn.MoltenUpdateOption('virt_lines_off_by_1', want)
   end
 end
@@ -352,9 +352,17 @@ return {
       vim.g.molten_virt_lines_off_by_1 = false -- per buffer type, see sync_output_offset()
       vim.g.molten_wrap_output = true
       vim.g.molten_output_win_max_height = 20
-      vim.api.nvim_create_autocmd('BufEnter', {
-        group = vim.api.nvim_create_augroup('kickstart-molten-offset', { clear = true }),
-        callback = sync_output_offset,
+      local group = vim.api.nvim_create_augroup('kickstart-molten-offset', { clear = true })
+      vim.api.nvim_create_autocmd('BufEnter', { group = group, callback = sync_output_offset })
+      -- exists('*MoltenRunningKernels') can't tell whether molten is running: remote plugin
+      -- functions are only defined on first call. So record the first kernel start instead.
+      vim.api.nvim_create_autocmd('User', {
+        group = group,
+        pattern = 'MoltenInitPost',
+        once = true,
+        callback = function()
+          vim.g.kickstart_molten_started = true
+        end,
       })
     end,
     config = function()
