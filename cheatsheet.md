@@ -392,8 +392,8 @@ Then `<leader>mi` lists `myproject`; `<leader>cv` points pyright at the same `.v
 | `<leader>mh` | Normal | Hide output float |
 | `<leader>md` | Normal | Delete the cell's output |
 | `<leader>mx` | Normal | Interrupt kernel |
-| `<leader>ms` | Normal | Restart kernel |
-| `<leader>mq` | Normal | Stop kernel |
+| `<leader>ms` | Normal | Restart kernel, clear outputs (logs progress like a start) |
+| `<leader>mq` | Normal | Stop kernel (logs which ones stopped) |
 | `<leader>me` | Normal | Export outputs into the `.ipynb` |
 
 Markdown text and code cells that only contain comments are skipped when running. Fences inside

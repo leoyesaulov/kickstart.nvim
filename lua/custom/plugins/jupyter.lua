@@ -218,7 +218,7 @@ for name, ks in KernelSpecManager().get_all_specs().items():
 print(json.dumps(out))
 ]]
 
--- Starts kernel `k` (a KERNELSPECS_PY entry) with progress messages. molten can't tell a kernel
+-- Kernel boot watching (starts and restarts). molten can't tell a kernel
 -- that's still booting from one that died: it keeps polling a dead one forever, and every poll
 -- blocks the UI for ~1s (stutter). So watch the kernel process and stop molten if it exits.
 -- Kernels are children of molten's Python host (matching by interpreter path doesn't work: on
@@ -242,13 +242,13 @@ local function process_dead(pid)
   return not stat:match '%S' or stat:match '^%s*Z' ~= nil
 end
 
-local function start_kernel(k)
-  local exe = vim.fn.fnamemodify(k.exe, ':~')
+-- Runs `launch` (a molten command that boots a kernel process) and reports progress until molten
+-- says the kernel is ready. `label` names the kernel in messages; `hint` is appended when the
+-- kernel dies during boot.
+local function watch_boot(label, hint, launch)
   local buf = vim.api.nvim_get_current_buf()
-
-  vim.notify(('Starting kernel %s (%s)…'):format(k.display, exe))
   local before, started = host_children(), vim.uv.now()
-  vim.cmd.MoltenInit(k.name)
+  launch()
   local pid
   for p in pairs(host_children()) do
     pid = not before[p] and p or pid
@@ -281,10 +281,7 @@ local function start_kernel(k)
       local secs = math.floor((vim.uv.now() - started) / 1000)
       if pid and process_dead(pid) then
         stop()
-        vim.notify(
-          ('Kernel %s exited during startup (after %ds). Run `%s -m ipykernel_launcher` to see why.'):format(k.display, secs, exe),
-          vim.log.levels.ERROR
-        )
+        vim.notify(('Kernel %s exited during startup (after %ds).%s'):format(label, secs, hint), vim.log.levels.ERROR)
         -- Stop molten's polling of the dead kernel. Only when it's the buffer's sole kernel:
         -- MoltenDeinit stops every kernel in the buffer.
         if vim.api.nvim_buf_is_valid(buf) then
@@ -296,10 +293,59 @@ local function start_kernel(k)
         end
       elseif secs - last_note >= 5 then
         last_note = secs
-        vim.notify(('Still starting kernel %s… %ds (pid %s)'):format(k.display, secs, pid or '?'))
+        vim.notify(('Still starting kernel %s… %ds (pid %s)'):format(label, secs, pid or '?'))
       end
     end)
   )
+end
+
+local function start_kernel(k)
+  local exe = vim.fn.fnamemodify(k.exe, ':~')
+  vim.notify(('Starting kernel %s (%s)…'):format(k.display, exe))
+  watch_boot(k.display, (' Run `%s -m ipykernel_launcher` to see why.'):format(exe), function()
+    vim.cmd.MoltenInit(k.name)
+  end)
+end
+
+-- Kernel ids attached to the current buffer, or nil (with a message) when there are none.
+local function buffer_kernels()
+  local ids = vim.g.kickstart_molten_started and vim.fn.MoltenRunningKernels(true) or {}
+  if #ids == 0 then
+    vim.notify('No kernel running in this buffer', vim.log.levels.WARN)
+    return nil
+  end
+  return ids
+end
+
+local function quit_kernels()
+  local ids = buffer_kernels()
+  if ids then
+    vim.cmd 'MoltenDeinit' -- stops every kernel attached to the buffer
+    vim.notify(('Stopped kernel%s %s'):format(#ids > 1 and 's' or '', table.concat(ids, ', ')))
+  end
+end
+
+-- Restarts a kernel of the current buffer (asks which one when there are several) and clears
+-- its outputs, with the same progress reporting as a fresh start.
+local function restart_kernel()
+  local ids = buffer_kernels()
+  if not ids then
+    return
+  end
+  local function restart(id)
+    if not id then
+      return
+    end
+    vim.notify(('Restarting kernel %s…'):format(id))
+    watch_boot(id, '', function()
+      vim.cmd.MoltenRestart { id, bang = true }
+    end)
+  end
+  if #ids == 1 then
+    restart(ids[1])
+  else
+    vim.ui.select(ids, { prompt = 'Restart kernel' }, restart)
+  end
 end
 
 -- MoltenInit's own picker lists bare kernel names; this one shows where each kernel runs from.
@@ -385,8 +431,8 @@ return {
       map('<leader>mh', '<cmd>MoltenHideOutput<cr>', '[H]ide output')
       map('<leader>md', '<cmd>MoltenDelete<cr>', '[D]elete cell output')
       map('<leader>mx', '<cmd>MoltenInterrupt<cr>', 'Interrupt kernel')
-      map('<leader>ms', '<cmd>MoltenRestart!<cr>', 'Re[S]tart kernel')
-      map('<leader>mq', '<cmd>MoltenDeinit<cr>', '[Q]uit kernel')
+      map('<leader>ms', restart_kernel, 'Re[S]tart kernel')
+      map('<leader>mq', quit_kernels, '[Q]uit kernel')
       map('<leader>me', '<cmd>MoltenExportOutput!<cr>', '[E]xport outputs to .ipynb')
       map('<leader>mj', function()
         new_cell(true)
