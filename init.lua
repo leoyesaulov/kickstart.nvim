@@ -564,9 +564,15 @@ require('lazy').setup({
           --  For example, in C this would take you to the header.
           map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
+          local client = vim.lsp.get_client_by_id(event.data.client_id)
+
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
-          map('gO', require('telescope.builtin').lsp_document_symbols, 'Open Document Symbols')
+          --  Only mapped when the server supports it, so servers like tailwindcss (which attach to
+          --  markdown) don't shadow Neovim's built-in `gO` outline with an error.
+          if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_documentSymbol, event.buf) then
+            map('gO', require('telescope.builtin').lsp_document_symbols, 'Open Document Symbols')
+          end
 
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
@@ -582,7 +588,6 @@ require('lazy').setup({
           --    See `:help CursorHold` for information about when this is executed
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
-          local client = vim.lsp.get_client_by_id(event.data.client_id)
           if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf) then
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
@@ -685,6 +690,7 @@ require('lazy').setup({
         docker_compose_language_service = {},
         bashls = {},
         texlab = {},
+        marksman = {}, -- Markdown: document symbols (`gO`), heading/link navigation (`gd`)
         -- NOTE: `jdtls` (Java) is intentionally NOT listed here — it needs a per-project
         -- workspace dir, lombok, and bundled java-debug/java-test jars that this generic
         -- servers-table + mason-lspconfig handler pattern can't express. It's started from

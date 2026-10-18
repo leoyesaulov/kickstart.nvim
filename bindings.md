@@ -17,7 +17,7 @@ table is currently `Disabled`.
 | `<leader>B` | Normal | Debug: set conditional breakpoint | debug.lua:63-69 | Active |
 | `<leader>b` | Normal | Debug: toggle breakpoint | debug.lua:56-62 | Active |
 | `<leader>cv` | Normal | Python: open venv-selector picker | custom/plugins/python.lua:11 | Active |
-| `<leader>f` | All | Format buffer (conform.nvim) | init.lua:760-767 | Active |
+| `<leader>f` | All | Format buffer (conform.nvim) | init.lua:766-773 | Active |
 | `<leader>gg` | Normal | Open LazyGit | custom/plugins/ui.lua:50 | Active |
 | `<leader>hD` | Normal | Git: diff against last commit | gitsigns.lua:52-54 | Active |
 | `<leader>hR` | Normal | Git: reset buffer | gitsigns.lua:48 | Active |
@@ -64,7 +64,7 @@ table is currently `Disabled`.
 | `<leader>tb` | Normal | Toggle current-line git blame | gitsigns.lua:56 | Active |
 | `<leader>td` | Normal (global; loads neotest on first use) | Test: debug nearest (neotest, via DAP) | custom/plugins/testing.lua:30 | Active |
 | `<leader>tf` | Normal (global; loads neotest on first use) | Test: run all tests in file (neotest) | custom/plugins/testing.lua:23 | Active |
-| `<leader>th` | Normal | Toggle inlay hints (if server supports it) | init.lua:614-616 | Active |
+| `<leader>th` | Normal | Toggle inlay hints (if server supports it) | init.lua:619-621 | Active |
 | `<leader>to` | Normal (global; loads neotest on first use) | Test: toggle output panel (neotest) | custom/plugins/testing.lua:44 | Active |
 | `<leader>tr` | Normal (global; loads neotest on first use) | Test: run nearest (neotest) | custom/plugins/testing.lua:16 | Active |
 | `<leader>ts` | Normal (global; loads neotest on first use) | Test: toggle summary panel (neotest) | custom/plugins/testing.lua:37 | Active |
@@ -99,15 +99,15 @@ table is currently `Disabled`.
 | `<F5>` | — | Debug: start/continue | debug.lua:29-34 | Active |
 | `<F7>` | — | Debug: toggle UI / see last session result | debug.lua:71-77 | Active |
 | `ci'` | Normal (mini.ai default) | Change inside `'` quote | mini.ai default | Active |
-| `gO` | Normal | Open document symbols | init.lua:569 | Active |
-| `gW` | Normal | Open workspace symbols | init.lua:573 | Active |
+| `gO` | Normal | Open document symbols (only if the LSP supports it; else Neovim's built-in outline, e.g. markdown headings) | init.lua:573-575 | Active |
+| `gW` | Normal | Open workspace symbols | init.lua:579 | Active |
 | `gra` | Normal, Visual | LSP code action | init.lua:549 | Active |
 | `grd` | Normal | LSP goto definition (`<C-t>` jumps back) | init.lua:561 | Active |
 | `grD` | Normal | LSP goto declaration | init.lua:565 | Active |
 | `gri` | Normal | LSP goto implementation | init.lua:556 | Active |
 | `grn` | Normal | LSP rename symbol | init.lua:545 | Active |
 | `grr` | Normal | LSP goto references | init.lua:552 | Active |
-| `grt` | Normal | LSP goto type definition | init.lua:578 | Active |
+| `grt` | Normal | LSP goto type definition | init.lua:584 | Active |
 | `saiw)` | Normal (mini.surround default) | Surround add around inner word with `)` | mini.surround default | Active |
 | `sd'` | Normal (mini.surround default) | Surround delete `'` | mini.surround default | Active |
 | `sr)'` | Normal (mini.surround default) | Surround replace `)` with `'` | mini.surround default | Active |

@@ -48,6 +48,10 @@ local function eval_cell(buf_lines, s, e)
     end
     s = s + 1
   end
+  -- Drop trailing blank lines so output lands right under the code, not under the gap.
+  while e > s and not buf_lines[e]:match '%S' do
+    e = e - 1
+  end
   for i = s, e do
     if buf_lines[i]:match '%S' and not buf_lines[i]:match '^%s*#' then
       vim.fn.MoltenEvaluateRange(s, e)
@@ -121,7 +125,9 @@ return {
       vim.g.molten_image_provider = images_supported and 'image.nvim' or 'none'
       vim.g.molten_auto_open_output = false -- output float only on <leader>mo
       vim.g.molten_virt_text_output = true -- short output as virtual text under the cell
-      vim.g.molten_virt_lines_off_by_1 = true -- ...placed after the cell's last line
+      -- off_by_1 is for markdown/quarto (skips the closing ``` fence); in jupytext's `# %%`
+      -- buffers it would push output past the next cell's marker.
+      vim.g.molten_virt_lines_off_by_1 = false
       vim.g.molten_wrap_output = true
       vim.g.molten_output_win_max_height = 20
     end,
@@ -165,6 +171,31 @@ return {
     'GCBallesteros/jupytext.nvim',
     lazy = false, -- must register its *.ipynb read/write autocmds before the first open
     opts = { style = 'percent', output_extension = 'auto' },
+    config = function(_, opts)
+      -- jupytext.nvim json-decodes the notebook unguarded, so a missing or empty `.ipynb` (e.g.
+      -- one just created with neo-tree's `a`) errors out. Seed those with an empty Python 3
+      -- notebook first — the `jupytext` CLI needs a valid file on disk too.
+      local utils = require 'jupytext.utils'
+      local get_metadata = utils.get_ipynb_metadata
+      utils.get_ipynb_metadata = function(filename)
+        local path = vim.fn.resolve(vim.fn.expand(filename))
+        if vim.fn.getfsize(path) <= 0 then
+          vim.fn.writefile({
+            vim.json.encode {
+              cells = {},
+              metadata = {
+                kernelspec = { display_name = 'Python 3', language = 'python', name = 'python3' },
+                language_info = { name = 'python' },
+              },
+              nbformat = 4,
+              nbformat_minor = 5,
+            },
+          }, path)
+        end
+        return get_metadata(filename)
+      end
+      require('jupytext').setup(opts)
+    end,
   },
   { -- Inline images (plots) via the Kitty graphics protocol
     '3rd/image.nvim',

@@ -4,11 +4,11 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 
 ### Navigating this file in Neovim
 
-There's no markdown LSP configured, so `gd` won't follow `[text](#anchor)` links. Use built-ins instead:
+`marksman` (markdown LSP) is configured, so `gd` on a `[text](#anchor)` link jumps to the heading and `gO` lists headings in Telescope. Without it (e.g. marksman not installed yet), these built-ins still work:
 
 | Key / Command | Action |
 |---|---|
-| `gO` | Open an outline of all headings in the location list — `<CR>` jumps to one (Neovim 0.11+) |
+| `gO` | Fuzzy-find headings (Telescope, via marksman); without a symbol-capable LSP, falls back to Neovim's outline in the location list — `<CR>` jumps to one |
 | `/^## Basics<CR>` | Jump to a chapter by searching for its heading |
 | `yi[` then `/<C-r>"<CR>`, `n` | From a TOC entry: yank the link text, search for it, `n` until you land on the heading |
 | `<leader>/` | Fuzzy-search the buffer (Telescope) — type a chapter name, `<CR>` to jump |
@@ -100,7 +100,7 @@ There's no markdown LSP configured, so `gd` won't follow `[text](#anchor)` links
 
 Triggered on `LspAttach`, buffer-local. Configured servers: `gopls`, `pyright`, `ruff`, `clangd`,
 `lua_ls`, `ts_ls`, `html`, `cssls`, `tailwindcss`, `jsonls`, `eslint`, `emmet_language_server`,
-`dockerls`, `docker_compose_language_service`, `bashls`, `texlab`. **Java (`jdtls`) is not in
+`dockerls`, `docker_compose_language_service`, `bashls`, `texlab`, `marksman` (markdown). **Java (`jdtls`) is not in
 this list** — it's started separately with its own lifecycle, see [Java](#java).
 
 | Key | Mode | Action |
@@ -112,7 +112,7 @@ this list** — it's started separately with its own lifecycle, see [Java](#java
 | `grd` | Normal | Goto definition (jump back with `<C-t>`) |
 | `grD` | Normal | Goto declaration |
 | `grt` | Normal | Goto type definition |
-| `gO` | Normal | Open document symbols |
+| `gO` | Normal | Open document symbols (only mapped if the server supports them) |
 | `gW` | Normal | Open workspace symbols |
 | `<leader>th` | Normal | Toggle inlay hints (if server supports it) |
 
