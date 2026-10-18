@@ -87,7 +87,18 @@ return {
 
       -- You can provide additional configuration to the handlers,
       -- see mason-nvim-dap README for more information
-      handlers = {},
+      --
+      -- delve, python (debugpy) and codelldb are configured explicitly (dap-go, dap-python, and
+      -- the codelldb block below), so their default handlers are no-ops — otherwise every
+      -- launch configuration would show up twice in the <F5> picker.
+      handlers = {
+        function(config)
+          require('mason-nvim-dap').default_setup(config)
+        end,
+        delve = function() end,
+        python = function() end,
+        codelldb = function() end,
+      },
 
       -- You'll need to check that you have the required things installed
       -- online, please don't ask me how to install them :)

@@ -102,20 +102,12 @@ return {
 
   -- Switch
   snip('sw', 'switch statement (arrow form)', fmta('switch (<>) {\n\tcase <> ->> <>\n\tdefault ->> <>\n}', { i(1), i(2), i(3), i(0) })),
-  snip(
-    'swe',
-    'switch expression',
-    fmta('var <> = switch (<>) {\n\tcase <> ->> <>;\n\tdefault ->> <>;\n};', { i(1, 'result'), i(2), i(3), i(4), i(0) })
-  ),
+  snip('swe', 'switch expression', fmta('var <> = switch (<>) {\n\tcase <> ->> <>;\n\tdefault ->> <>;\n};', { i(1, 'result'), i(2), i(3), i(4), i(0) })),
 
   -- Try
   snip('tryc', 'try / catch', fmta('try {\n\t<>\n} catch (<> e) {\n\t<>\n}', { i(1), i(2, 'Exception'), i(0) })),
   snip('tryf', 'try / finally', fmta('try {\n\t<>\n} finally {\n\t<>\n}', { i(1), i(0) })),
-  snip(
-    'trycf',
-    'try / catch / finally',
-    fmta('try {\n\t<>\n} catch (<> e) {\n\t<>\n} finally {\n\t<>\n}', { i(1), i(2, 'Exception'), i(3), i(0) })
-  ),
+  snip('trycf', 'try / catch / finally', fmta('try {\n\t<>\n} catch (<> e) {\n\t<>\n} finally {\n\t<>\n}', { i(1), i(2, 'Exception'), i(3), i(0) })),
   snip('tryr', 'try-with-resources', fmta('try (<>) {\n\t<>\n}', { i(1), i(0) })),
 
   -- Throw

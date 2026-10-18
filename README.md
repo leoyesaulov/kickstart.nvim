@@ -80,9 +80,10 @@ fork to your machine using one of the commands below, depending on your OS.
 > Your fork's URL will be something like this:
 > `https://github.com/<your_github_username>/kickstart.nvim.git`
 
-You likely want to remove `lazy-lock.json` from your fork's `.gitignore` file
-too - it's ignored in the kickstart repo to make maintenance easier, but it's
-[recommended to track it in version control](https://lazy.folke.io/usage/lockfile).
+This fork tracks `lazy-lock.json` in version control, as
+[recommended by lazy.nvim](https://lazy.folke.io/usage/lockfile), so plugin versions are pinned.
+`install.sh` symlinks it into your config dir, so `:Lazy update` writes the new pins back into the
+repo — commit them like any other change (`:Lazy restore` rolls back to the committed pins).
 
 #### Clone kickstart.nvim
 

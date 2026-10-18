@@ -39,7 +39,17 @@ return {
       return nil
     end
 
-    local root_markers = { 'pom.xml', 'build.gradle', 'build.gradle.kts', 'settings.gradle', '.git' }
+    -- Ordered by priority, not proximity: vim.fs.root tries each group in turn, so a multi-module
+    -- build resolves to the top-level project (gradlew/mvnw/settings.gradle) rather than the
+    -- submodule whose build.gradle/pom.xml happens to be nearest.
+    local root_markers = {
+      { 'gradlew', 'mvnw', 'settings.gradle', 'settings.gradle.kts' },
+      '.git',
+      { 'pom.xml', 'build.gradle', 'build.gradle.kts' },
+    }
+    local function find_root()
+      return vim.fs.root(0, root_markers)
+    end
 
     -- jdtls checks every project's gradle/wrapper/gradle-wrapper.jar against Gradle's published
     -- checksums and refuses unknown ones ("Security Warning! The gradle wrapper ... could be
@@ -98,13 +108,14 @@ return {
         return
       end
 
-      local root_dir = require('jdtls.setup').find_root(root_markers)
+      local root_dir = find_root()
       if not root_dir or root_dir == '' then
         return
       end
 
       local project_name = vim.fn.fnamemodify(root_dir, ':p:h:t')
-      local workspace_dir = vim.fn.stdpath 'cache' .. '/jdtls-workspace/' .. project_name
+      -- Hash suffix keeps two projects with the same folder name from sharing one jdtls index.
+      local workspace_dir = vim.fn.stdpath 'cache' .. '/jdtls-workspace/' .. project_name .. '-' .. vim.fn.sha256(root_dir):sub(1, 8)
 
       local trusted = read_trusted()
       local settings = {
@@ -132,8 +143,6 @@ return {
           '-Declipse.application=org.eclipse.jdt.ls.core.id1',
           '-Dosgi.bundles.defaultStartLevel=4',
           '-Declipse.product=org.eclipse.jdt.ls.core.product',
-          '-Dlog.protocol=true',
-          '-Dlog.level=ALL',
           '-javaagent:' .. jdtls_root .. '/lombok.jar',
           '-Xmx1g',
           '--add-modules=ALL-SYSTEM',
@@ -181,7 +190,7 @@ return {
     end
 
     vim.api.nvim_create_user_command('JdtTrustGradleWrapper', function()
-      local root = require('jdtls.setup').find_root(root_markers)
+      local root = find_root()
       local jar = root and root .. '/gradle/wrapper/gradle-wrapper.jar'
       if not jar or vim.fn.filereadable(jar) == 0 then
         vim.notify('jdtls: no gradle/wrapper/gradle-wrapper.jar in this project', vim.log.levels.WARN)

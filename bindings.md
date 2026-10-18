@@ -12,12 +12,12 @@ table is currently `Disabled`.
 |---|---|---|---|---|
 | `<Esc>` | Normal | Clear search highlight | init.lua:174 | Active |
 | `<Esc><Esc>` | Terminal | Exit terminal mode to Normal (fallback `<C-\><C-n>`) | init.lua:185 | Active |
-| `<leader><leader>` | Normal | Find existing buffers | init.lua:438 | Active |
-| `<leader>/` | Normal | Fuzzy search in current buffer | init.lua:441-447 | Active |
+| `<leader><leader>` | Normal | Find existing buffers | init.lua:443 | Active |
+| `<leader>/` | Normal | Fuzzy search in current buffer | init.lua:446-452 | Active |
 | `<leader>B` | Normal | Debug: set conditional breakpoint | debug.lua:63-69 | Active |
 | `<leader>b` | Normal | Debug: toggle breakpoint | debug.lua:56-62 | Active |
 | `<leader>cv` | Normal | Python: open venv-selector picker | custom/plugins/python.lua:11 | Active |
-| `<leader>f` | All | Format buffer (conform.nvim) | init.lua:767-774 | Active |
+| `<leader>f` | All | Format buffer (conform.nvim) | init.lua:760-767 | Active |
 | `<leader>gg` | Normal | Open LazyGit | custom/plugins/ui.lua:50 | Active |
 | `<leader>hD` | Normal | Git: diff against last commit | gitsigns.lua:52-54 | Active |
 | `<leader>hR` | Normal | Git: reset buffer | gitsigns.lua:48 | Active |
@@ -28,10 +28,10 @@ table is currently `Disabled`.
 | `<leader>hr` | Normal, Visual | Git: reset hunk | gitsigns.lua:40-45 | Active |
 | `<leader>hs` | Normal, Visual | Git: stage hunk | gitsigns.lua:37-44 | Active |
 | `<leader>hu` | Normal | Git: undo stage hunk | gitsigns.lua:47 | Active |
-| `<leader>jg` | Normal (Java buffers) | Java: generate menu (constructors, getters/setters, toString, equals/hashCode from fields) | custom/plugins/java.lua:174 | Active |
-| `<leader>jm` | Normal (Java buffers) | Java: run/debug nearest test method | custom/plugins/java.lua:173 | Active |
-| `<leader>jo` | Normal (Java buffers) | Java: organize imports | custom/plugins/java.lua:171 | Active |
-| `<leader>jt` | Normal (Java buffers) | Java: run/debug test class | custom/plugins/java.lua:172 | Active |
+| `<leader>jg` | Normal (Java buffers) | Java: generate menu (constructors, getters/setters, toString, equals/hashCode from fields) | custom/plugins/java.lua:183 | Active |
+| `<leader>jm` | Normal (Java buffers) | Java: run/debug nearest test method | custom/plugins/java.lua:182 | Active |
+| `<leader>jo` | Normal (Java buffers) | Java: organize imports | custom/plugins/java.lua:180 | Active |
+| `<leader>jt` | Normal (Java buffers) | Java: run/debug test class | custom/plugins/java.lua:181 | Active |
 | `<leader>mA` | Normal | Notebook: run all cells above the cursor (molten) | custom/plugins/jupyter.lua:140 | Active |
 | `<leader>ma` | Normal | Notebook: run all cells (molten) | custom/plugins/jupyter.lua:137 | Active |
 | `<leader>md` | Normal | Notebook: delete output of the cell under the cursor | custom/plugins/jupyter.lua:145 | Active |
@@ -49,25 +49,25 @@ table is currently `Disabled`.
 | `<leader>ms` | Normal | Notebook: restart kernel | custom/plugins/jupyter.lua:147 | Active |
 | `<leader>mx` | Normal | Notebook: interrupt kernel | custom/plugins/jupyter.lua:146 | Active |
 | `<leader>q` | Normal | Open diagnostic quickfix list | init.lua:177 | Active |
-| `<leader>s.` | Normal | Search recent files | init.lua:437 | Active |
-| `<leader>s/` | Normal | Grep across open files | init.lua:451-456 | Active |
-| `<leader>sd` | Normal | Search diagnostics | init.lua:435 | Active |
-| `<leader>sf` | Normal | Search files | init.lua:431 | Active |
-| `<leader>sg` | Normal | Search by grep (live grep) | init.lua:434 | Active |
-| `<leader>sh` | Normal | Search help tags | init.lua:429 | Active |
-| `<leader>sk` | Normal | Search keymaps | init.lua:430 | Active |
-| `<leader>sn` | Normal | Search Neovim config files | init.lua:459-461 | Active |
-| `<leader>sr` | Normal | Search resume (last picker) | init.lua:436 | Active |
-| `<leader>ss` | Normal | Search Select Telescope (pick a picker) | init.lua:432 | Active |
-| `<leader>sw` | Normal | Search current word | init.lua:433 | Active |
+| `<leader>s.` | Normal | Search recent files | init.lua:442 | Active |
+| `<leader>s/` | Normal | Grep across open files | init.lua:456-461 | Active |
+| `<leader>sd` | Normal | Search diagnostics | init.lua:440 | Active |
+| `<leader>sf` | Normal | Search files | init.lua:436 | Active |
+| `<leader>sg` | Normal | Search by grep (live grep) | init.lua:439 | Active |
+| `<leader>sh` | Normal | Search help tags | init.lua:434 | Active |
+| `<leader>sk` | Normal | Search keymaps | init.lua:435 | Active |
+| `<leader>sn` | Normal | Search Neovim config files | init.lua:464-466 | Active |
+| `<leader>sr` | Normal | Search resume (last picker) | init.lua:441 | Active |
+| `<leader>ss` | Normal | Search Select Telescope (pick a picker) | init.lua:437 | Active |
+| `<leader>sw` | Normal | Search current word | init.lua:438 | Active |
 | `<leader>tD` | Normal | Toggle deleted-line preview (git) | gitsigns.lua:57 | Active |
 | `<leader>tb` | Normal | Toggle current-line git blame | gitsigns.lua:56 | Active |
-| `<leader>td` | Normal (Python buffers) | Test: debug nearest (neotest, via DAP) | custom/plugins/testing.lua:30 | Active |
-| `<leader>tf` | Normal (Python buffers) | Test: run all tests in file (neotest) | custom/plugins/testing.lua:23 | Active |
-| `<leader>th` | Normal | Toggle inlay hints (if server supports it) | init.lua:622-624 | Active |
-| `<leader>to` | Normal (Python buffers) | Test: toggle output panel (neotest) | custom/plugins/testing.lua:44 | Active |
-| `<leader>tr` | Normal (Python buffers) | Test: run nearest (neotest) | custom/plugins/testing.lua:16 | Active |
-| `<leader>ts` | Normal (Python buffers) | Test: toggle summary panel (neotest) | custom/plugins/testing.lua:37 | Active |
+| `<leader>td` | Normal (global; loads neotest on first use) | Test: debug nearest (neotest, via DAP) | custom/plugins/testing.lua:30 | Active |
+| `<leader>tf` | Normal (global; loads neotest on first use) | Test: run all tests in file (neotest) | custom/plugins/testing.lua:23 | Active |
+| `<leader>th` | Normal | Toggle inlay hints (if server supports it) | init.lua:614-616 | Active |
+| `<leader>to` | Normal (global; loads neotest on first use) | Test: toggle output panel (neotest) | custom/plugins/testing.lua:44 | Active |
+| `<leader>tr` | Normal (global; loads neotest on first use) | Test: run nearest (neotest) | custom/plugins/testing.lua:16 | Active |
+| `<leader>ts` | Normal (global; loads neotest on first use) | Test: toggle summary panel (neotest) | custom/plugins/testing.lua:37 | Active |
 | `<leader>tt` | Normal | Toggle integrated terminal (toggleterm) | custom/plugins/ui.lua:39 | Active |
 | `<leader>xq` | Normal | Trouble: toggle quickfix list | custom/plugins/ui.lua:31 | Active |
 | `<leader>xw` | Normal | Trouble: toggle buffer-only diagnostics | custom/plugins/ui.lua:30 | Active |
@@ -99,15 +99,15 @@ table is currently `Disabled`.
 | `<F5>` | — | Debug: start/continue | debug.lua:29-34 | Active |
 | `<F7>` | — | Debug: toggle UI / see last session result | debug.lua:71-77 | Active |
 | `ci'` | Normal (mini.ai default) | Change inside `'` quote | mini.ai default | Active |
-| `gO` | Normal | Open document symbols | init.lua:564 | Active |
-| `gW` | Normal | Open workspace symbols | init.lua:568 | Active |
-| `gra` | Normal, Visual | LSP code action | init.lua:544 | Active |
-| `grd` | Normal | LSP goto definition (`<C-t>` jumps back) | init.lua:556 | Active |
-| `grD` | Normal | LSP goto declaration | init.lua:560 | Active |
-| `gri` | Normal | LSP goto implementation | init.lua:551 | Active |
-| `grn` | Normal | LSP rename symbol | init.lua:540 | Active |
-| `grr` | Normal | LSP goto references | init.lua:547 | Active |
-| `grt` | Normal | LSP goto type definition | init.lua:573 | Active |
+| `gO` | Normal | Open document symbols | init.lua:569 | Active |
+| `gW` | Normal | Open workspace symbols | init.lua:573 | Active |
+| `gra` | Normal, Visual | LSP code action | init.lua:549 | Active |
+| `grd` | Normal | LSP goto definition (`<C-t>` jumps back) | init.lua:561 | Active |
+| `grD` | Normal | LSP goto declaration | init.lua:565 | Active |
+| `gri` | Normal | LSP goto implementation | init.lua:556 | Active |
+| `grn` | Normal | LSP rename symbol | init.lua:545 | Active |
+| `grr` | Normal | LSP goto references | init.lua:552 | Active |
+| `grt` | Normal | LSP goto type definition | init.lua:578 | Active |
 | `saiw)` | Normal (mini.surround default) | Surround add around inner word with `)` | mini.surround default | Active |
 | `sd'` | Normal (mini.surround default) | Surround delete `'` | mini.surround default | Active |
 | `sr)'` | Normal (mini.surround default) | Surround replace `)` with `'` | mini.surround default | Active |

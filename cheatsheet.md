@@ -54,9 +54,13 @@ There's no markdown LSP configured, so `gd` won't follow `[text](#anchor)` links
 |---|---|
 | `:Tutor` | Built-in interactive Neovim tutorial — start here if new |
 | `:Lazy` | Open lazy.nvim plugin manager UI |
-| `:Lazy update` | Update all plugins |
+| `:Lazy update` | Update all plugins (pins land in the repo's `lazy-lock.json` — commit them) |
+| `:Lazy restore` | Roll plugins back to the versions pinned in `lazy-lock.json` |
 | `:Mason` | Manage installed LSP servers / formatters / linters / debuggers (`g?` for help inside) |
-| `:checkhealth` | Run health checks (Neovim version, `git`, `make`, `unzip`, `rg` presence) |
+| `:checkhealth` | Run health checks (Neovim version, `git`, `make`, `unzip`, `rg`, `fd`, `tree-sitter` presence) |
+
+**Leader groups** (which-key labels shown after pressing `<Space>`): `s` Search, `t` Toggle/Test,
+`h` Git hunk, `m` Molten (notebooks), `x` Trouble (diagnostics), `j` Java, `c` Code, `g` Git.
 
 ## Core / Window Navigation
 

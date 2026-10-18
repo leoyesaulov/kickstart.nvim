@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Symlinks this repo's init.lua and lua/ into Neovim's config directory,
+# Symlinks this repo's init.lua, lua/ and lazy-lock.json into Neovim's config directory,
 # regardless of where the repo itself is checked out.
 #
 # Usage: ./install.sh
@@ -99,7 +99,9 @@ ensure_tex_distribution() {
       brew install --cask basictex
     fi
     # Call tlmgr by full path: /Library/TeX/texbin isn't on PATH until a new shell starts.
-    if [[ -x "$tlmgr" ]]; then
+    if [[ -x /Library/TeX/texbin/latexmk ]]; then
+      echo "OK      latexmk already installed (/Library/TeX/texbin/latexmk — open a new shell to get it on PATH)"
+    elif [[ -x "$tlmgr" ]]; then
       echo "Installing latexmk via tlmgr..."
       sudo "$tlmgr" update --self
       sudo "$tlmgr" install latexmk
@@ -163,7 +165,7 @@ ensure_molten_venv() {
     echo "Creating Jupyter/molten venv at $venv..."
     "$py" -m venv "$venv"
   fi
-  echo "Installing/updating pynvim, jupyter_client, ipykernel, jupytext, nbformat in $venv..."
+  echo "Installing/updating pynvim, jupyter_client, ipykernel, jupytext, nbformat, pyperclip in $venv..."
   "$venv/bin/pip" install --quiet --upgrade pip pynvim jupyter_client ipykernel jupytext nbformat pyperclip
   # molten writes kernel connection files here but doesn't create the dir on a fresh machine.
   "$venv/bin/python" -c 'import os, jupyter_core.paths as p; os.makedirs(p.jupyter_runtime_dir(), exist_ok=True)'
@@ -206,7 +208,8 @@ link() {
   fi
 
   if [[ -e "$dest" || -L "$dest" ]]; then
-    local backup="$dest.bak.$(date +%Y%m%d%H%M%S)"
+    local backup
+    backup="$dest.bak.$(date +%Y%m%d%H%M%S)"
     mv "$dest" "$backup"
     echo "BACKED UP  $dest -> $backup"
   fi
@@ -217,6 +220,7 @@ link() {
 
 link init.lua
 link lua
+link lazy-lock.json
 
 echo "Done. Config dir: $config_dir"
 echo "Next: open nvim and let Lazy + Mason finish installing (:Lazy, :Mason), then run :checkhealth."
