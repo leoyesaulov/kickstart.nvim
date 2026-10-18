@@ -1,0 +1,57 @@
+# Runs `make test` pieces: lint on Ubuntu, the headless nvim tests on the two supported
+# platforms (latest Arch Linux, latest macOS). See README's "Testing" section.
+name: Tests
+on: [push, pull_request]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install linters
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck zsh fish
+          curl -fsSL -o /tmp/stylua.zip https://github.com/JohnnyMorganz/StyLua/releases/latest/download/stylua-linux-x86_64.zip
+          sudo unzip -o /tmp/stylua.zip -d /usr/local/bin
+      - run: make lint STRICT=1
+
+  nvim:
+    name: Neovim (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: arch
+            os: ubuntu-latest
+            container: archlinux:latest
+          - name: macos
+            os: macos-latest
+            container: ''
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    steps:
+      - name: Install dependencies (Arch)
+        if: matrix.name == 'arch'
+        run: pacman -Syu --noconfirm --needed base-devel git neovim ripgrep fd tree-sitter-cli python unzip zstd
+      - name: Install dependencies (macOS)
+        if: matrix.name == 'macos'
+        run: brew install neovim ripgrep fd tree-sitter-cli
+      - uses: actions/checkout@v4
+      - name: Install jupytext (for the .ipynb fixture)
+        run: |
+          python3 -m venv "$RUNNER_TEMP/jupytext"
+          "$RUNNER_TEMP/jupytext/bin/pip" install --quiet jupytext
+          echo "$RUNNER_TEMP/jupytext/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .tests/data/nvim/lazy
+            .tests/data/nvim/site
+          key: nvim-${{ matrix.name }}-${{ hashFiles('lazy-lock.json', 'init.lua') }}
+          restore-keys: nvim-${{ matrix.name }}-
+      - run: nvim --version
+      - run: make deps
+      - run: make smoke
+      - run: make keymaps

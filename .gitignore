@@ -4,4 +4,6 @@ test.sh
 nvim
 
 spell/
-lazy-lock.json
+
+# test sandbox (make test)
+.tests/
