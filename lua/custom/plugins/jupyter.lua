@@ -195,6 +195,149 @@ local function new_cell(below)
   vim.cmd 'startinsert'
 end
 
+-- Kernelspecs as molten's host sees them, each with the interpreter it actually launches.
+-- jupyter_client swaps a bare `python`/`python3`/`python3.X` argv[0] for its own interpreter
+-- (molten's venv), so resolve that the same way. `ipykernel` is false when an ipykernel spec's
+-- interpreter can't import it (e.g. a rebuilt venv) — that kernel would die on launch.
+local KERNELSPECS_PY = [[
+import json, os, shutil, subprocess, sys
+from jupyter_client.kernelspec import KernelSpecManager
+bare = {'python', 'python%d' % sys.version_info[0], 'python%d.%d' % sys.version_info[:2]}
+out = []
+for name, ks in KernelSpecManager().get_all_specs().items():
+    spec = ks['spec']
+    argv = spec.get('argv') or ['']
+    exe = sys.executable if argv[0] in bare else (shutil.which(argv[0]) or argv[0])
+    exists = os.access(exe, os.X_OK)
+    ipykernel = True
+    if exists and 'ipykernel_launcher' in argv:
+        check = 'import importlib.util as u, sys; sys.exit(u.find_spec("ipykernel_launcher") is None)'
+        ipykernel = subprocess.run([exe, '-I', '-c', check]).returncode == 0
+    out.append({'name': name, 'display': spec.get('display_name') or name, 'exe': exe,
+                'exists': exists, 'ipykernel': ipykernel, 'dir': ks['resource_dir']})
+print(json.dumps(out))
+]]
+
+-- Starts kernel `k` (a KERNELSPECS_PY entry) with progress messages. molten can't tell a kernel
+-- that's still booting from one that died: it keeps polling a dead one forever, and every poll
+-- blocks the UI for ~1s (stutter). So watch the kernel process and stop molten if it exits.
+-- Kernels are children of molten's Python host (matching by interpreter path doesn't work: on
+-- macOS a venv's python shows up in `ps` as the framework's Python.app binary).
+local function host_children()
+  local set = {}
+  for _, chan in ipairs(vim.api.nvim_list_chans()) do
+    if chan.client and chan.client.name == 'python3-rplugin-host' then
+      local out = vim.system({ 'pgrep', '-P', tostring(vim.fn.jobpid(chan.id)) }, { text = true }):wait().stdout
+      for pid in (out or ''):gmatch '%d+' do
+        set[tonumber(pid)] = true
+      end
+    end
+  end
+  return set
+end
+
+-- Gone, or exited but not yet reaped by molten's host (zombie).
+local function process_dead(pid)
+  local stat = vim.system({ 'ps', '-o', 'stat=', '-p', tostring(pid) }, { text = true }):wait().stdout or ''
+  return not stat:match '%S' or stat:match '^%s*Z' ~= nil
+end
+
+local function start_kernel(k)
+  local exe = vim.fn.fnamemodify(k.exe, ':~')
+  local buf = vim.api.nvim_get_current_buf()
+
+  vim.notify(('Starting kernel %s (%s)…'):format(k.display, exe))
+  local before, started = host_children(), vim.uv.now()
+  vim.cmd.MoltenInit(k.name)
+  local pid
+  for p in pairs(host_children()) do
+    pid = not before[p] and p or pid
+  end
+
+  local timer = assert(vim.uv.new_timer())
+  local ready_au
+  local function stop()
+    timer:stop()
+    timer:close()
+    pcall(vim.api.nvim_del_autocmd, ready_au)
+  end
+  ready_au = vim.api.nvim_create_autocmd('User', {
+    pattern = 'MoltenKernelReady',
+    once = true,
+    callback = function()
+      if not timer:is_closing() then
+        stop()
+      end
+    end,
+  })
+  local last_note = 0
+  timer:start(
+    1000,
+    1000,
+    vim.schedule_wrap(function()
+      if timer:is_closing() then
+        return
+      end
+      local secs = math.floor((vim.uv.now() - started) / 1000)
+      if pid and process_dead(pid) then
+        stop()
+        vim.notify(
+          ('Kernel %s exited during startup (after %ds). Run `%s -m ipykernel_launcher` to see why.'):format(k.display, secs, exe),
+          vim.log.levels.ERROR
+        )
+        -- Stop molten's polling of the dead kernel. Only when it's the buffer's sole kernel:
+        -- MoltenDeinit stops every kernel in the buffer.
+        if vim.api.nvim_buf_is_valid(buf) then
+          vim.api.nvim_buf_call(buf, function()
+            if #vim.fn.MoltenRunningKernels(true) == 1 then
+              vim.cmd 'MoltenDeinit'
+            end
+          end)
+        end
+      elseif secs - last_note >= 5 then
+        last_note = secs
+        vim.notify(('Still starting kernel %s… %ds (pid %s)'):format(k.display, secs, pid or '?'))
+      end
+    end)
+  )
+end
+
+-- MoltenInit's own picker lists bare kernel names; this one shows where each kernel runs from.
+local function pick_kernel()
+  local python = vim.g.python3_host_prog or 'python3'
+  vim.system({ python, '-I', '-c', KERNELSPECS_PY }, { text = true }, function(res)
+    vim.schedule(function()
+      local ok, specs = pcall(vim.json.decode, res.stdout or '')
+      if res.code ~= 0 or not ok or #specs == 0 then
+        vim.notify('Could not list Jupyter kernels:\n' .. (res.stderr or ''), vim.log.levels.ERROR)
+        return
+      end
+      table.sort(specs, function(a, b)
+        return a.name < b.name
+      end)
+      vim.ui.select(specs, {
+        prompt = 'Jupyter kernel',
+        format_item = function(k)
+          local label = k.display == k.name and k.name or ('%s [%s]'):format(k.display, k.name)
+          local problem = not k.exists and '  (missing!)' or not k.ipykernel and '  (no ipykernel!)' or ''
+          return ('%s  %s%s'):format(label, vim.fn.fnamemodify(k.exe, ':~'), problem)
+        end,
+      }, function(k)
+        if not k then
+          return
+        elseif not k.exists then
+          vim.notify(('Kernel %s: interpreter %s does not exist'):format(k.display, k.exe), vim.log.levels.ERROR)
+        elseif not k.ipykernel then
+          local exe = vim.fn.fnamemodify(k.exe, ':~')
+          vim.notify(('Kernel %s: ipykernel is not installed. Run `%s -m pip install ipykernel`'):format(k.display, exe), vim.log.levels.ERROR)
+        else
+          start_kernel(k)
+        end
+      end)
+    end)
+  end)
+end
+
 return {
   { -- Run code against a Jupyter kernel, output shown inline under the cell
     'benlubas/molten-nvim',
@@ -218,7 +361,7 @@ return {
       local map = function(keys, func, desc, mode)
         vim.keymap.set(mode or 'n', keys, func, { desc = 'Molten: ' .. desc })
       end
-      map('<leader>mi', '<cmd>MoltenInit<cr>', '[I]nit kernel (pick)')
+      map('<leader>mi', pick_kernel, '[I]nit kernel (pick)')
       map('<leader>mr', run_cell, '[R]un cell')
       map('<leader>mr', ':<C-u>MoltenEvaluateVisual<cr>gv<Esc>', '[R]un selection', 'v')
       map('<leader>mn', run_cell_and_next, 'Run cell, go to [N]ext')

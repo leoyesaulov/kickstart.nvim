@@ -355,18 +355,31 @@ keys (no `.ipynb` needed; in `.py` files cells are `# %%` blocks and `# %% [mark
 skipped), or convert it: `jupytext --to ipynb --set-kernel python3 foo.py`. `jupytext` lives in
 the molten venv: `~/.local/share/nvim/molten-venv/bin/jupytext`.
 
-**Use a project's venv (its packages) as the kernel:** once per venv, with the venv activated:
+**Per-project/subject kernel:** a kernel is a venv with `ipykernel`, registered under a name.
+Once per project:
 
 ```sh
+python3 -m venv .venv && source .venv/bin/activate   # fish: activate.fish
 pip install ipykernel
-python -m ipykernel install --user --name myproject
+python -m ipykernel install --user --name myproject --display-name "My Project"
 ```
 
-Then `<leader>mi` lists `myproject`.
+Then `<leader>mi` lists `myproject`; `<leader>cv` points pyright at the same `.venv`.
+
+- **Install dependencies:** `pip install numpy ...` with the venv activated, or `%pip install
+  numpy ...` in a notebook cell (always targets the running kernel; plain `!pip` may not).
+  Restart the kernel (`<leader>ms`) before importing a package installed mid-session.
+- **Pin it in the notebook** so Jupyter/VS Code pick it too: `jupytext --set-kernel myproject foo.ipynb`.
+- **List/remove:** `jupyter kernelspec list` / `jupyter kernelspec remove myproject` (both in the
+  molten venv's `bin/`). Deleting `.venv` alone leaves a broken entry, marked `(missing!)` in
+  `<leader>mi`; a venv without ipykernel is marked `(no ipykernel!)`.
+- **Slow or dead kernel:** while a kernel boots, `<leader>mi` reports progress every 5s. If the
+  kernel process dies during startup it says so and stops molten (otherwise molten polls the dead
+  kernel forever, freezing nvim ~1s per poll).
 
 | Key | Mode | Action |
 |---|---|---|
-| `<leader>mi` | Normal | Init kernel (pick from installed kernels) |
+| `<leader>mi` | Normal | Init kernel (picker shows each kernel's interpreter path) |
 | `<leader>mr` | Normal | Run current cell |
 | `<leader>mr` | Visual | Run selection |
 | `<leader>mn` | Normal | Run cell, jump to next |
