@@ -6,25 +6,9 @@ return {
     config = function()
       local lint = require 'lint'
       lint.linters_by_ft = {
-        markdown = { 'markdownlint' },
         dockerfile = { 'hadolint' },
         sh = { 'shellcheck' },
         bash = { 'shellcheck' },
-      }
-
-      -- Relax MD013 (line length) to 150 via lua/kickstart/markdownlint.jsonc, unless the
-      -- project has its own markdownlint config (markdownlint-cli reads those from cwd).
-      local md_config = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':h:h') .. '/markdownlint.jsonc'
-      lint.linters.markdownlint.args = {
-        function()
-          for _, f in ipairs { '.markdownlint.jsonc', '.markdownlint.json', '.markdownlint.yaml', '.markdownlint.yml', '.markdownlintrc' } do
-            if vim.uv.fs_stat(f) then
-              return '--stdin'
-            end
-          end
-          return '--config=' .. md_config
-        end,
-        '--stdin',
       }
 
       -- To allow other plugins to add linters to require('lint').linters_by_ft,
@@ -69,11 +53,6 @@ return {
           -- avoid superfluous noise, notably within the handy LSP pop-ups that
           -- describe the hovered symbol using Markdown.
           if not vim.bo.modifiable then
-            return
-          end
-          -- Jupyter notebooks open as markdown (lua/custom/plugins/jupyter.lua); markdownlint's
-          -- style rules are noise on course notebooks. Their code cells get ruff via otter.
-          if vim.api.nvim_buf_get_name(0):match '%.ipynb$' then
             return
           end
           local names = lint.linters_by_ft[vim.bo.filetype]

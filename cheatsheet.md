@@ -138,7 +138,6 @@ either** — clangd's own `textDocument/formatting` covers it via LSP fallback.
 
 | Filetype | Linter |
 |---|---|
-| `markdown` | markdownlint |
 | `dockerfile` | hadolint |
 | `sh`, `bash` | shellcheck |
 
@@ -285,7 +284,7 @@ neotest adapters are unmaintained, so those two languages test via the DAP debug
 
 ## Markdown Preview (markview.nvim)
 
-Active by default (loaded eagerly, no filetype trigger needed) — renders markdown **in the buffer itself** via Treesitter as you type/move the cursor; there's no separate preview window or browser. No default keymaps ship with the plugin, so bind the commands below yourself if you want quick access. markdownlint (see [Linting](#linting)) runs alongside it independently.
+Active by default (loaded eagerly, no filetype trigger needed) — renders markdown **in the buffer itself** via Treesitter as you type/move the cursor; there's no separate preview window or browser. No default keymaps ship with the plugin, so bind the commands below yourself if you want quick access.
 
 | Command | Scope | Action |
 |---|---|---|
@@ -317,7 +316,7 @@ together:
 - **otter.nvim** — gives the code cells real Python LSP: pyright + ruff run on a hidden
   `foo.ipynb.otter.py` buffer, so completion, hover (`K`), go-to-definition, rename and ruff
   diagnostics work inside the fences. `:w` / `<leader>f` format code cells with ruff
-  (`conform`'s `injected` formatter); the markdown is left as is. markdownlint is off for notebooks.
+  (`conform`'s `injected` formatter); the markdown is left as is.
 - **molten.nvim** — talks to a real Jupyter kernel. Short output shows as virtual text under the
   cell, longer output in a float (`<leader>mo`).
 - **image.nvim** — draws plots and images inline. Only enabled in **Kitty or Ghostty** (detected

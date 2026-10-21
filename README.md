@@ -38,7 +38,7 @@ Neovim itself — so a fresh system only needs `git` plus `pacman` or `brew`):
   it, flip the flag back to `false` and select a non-Nerd-Font in your terminal
 - Emoji fonts (Ubuntu only, and only if you want emoji!) `sudo apt install fonts-noto-color-emoji`
 - Language Setup:
-  - TypeScript/JS/HTML/CSS/Tailwind, Python (pyright), Bash, Docker, Markdown lint, prettier:
+  - TypeScript/JS/HTML/CSS/Tailwind, Python (pyright), Bash, Docker, prettier:
     `npm` — Mason installs all of these through it
   - Golang: `go` — Mason installs `gopls` and `delve` through it
   - Java: a JDK on `PATH`/`JAVA_HOME` (`install.sh`'s `ensure_jdk` handles this on Arch/macOS).
