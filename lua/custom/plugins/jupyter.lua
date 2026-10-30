@@ -488,20 +488,49 @@ return {
     },
     config = function(_, opts)
       require('otter').setup(opts)
+      local group = vim.api.nvim_create_augroup('kickstart-otter', { clear = true })
+
+      local function otter_active(buf)
+        for _, c in ipairs(vim.lsp.get_clients { bufnr = buf }) do
+          if c.name:match '^otter%-ls' then
+            return true
+          end
+        end
+        return false
+      end
+
+      -- otter.activate silently does nothing in a buffer without python cells yet (a new or
+      -- empty notebook), and never looks again. So retry as the buffer changes until it sticks.
+      local function activate(buf)
+        if not vim.api.nvim_buf_is_valid(buf) or otter_active(buf) then
+          return true
+        end
+        vim.api.nvim_buf_call(buf, function()
+          require('otter').activate { 'python' }
+        end)
+        return otter_active(buf)
+      end
+
       vim.api.nvim_create_autocmd('FileType', {
-        group = vim.api.nvim_create_augroup('kickstart-otter', { clear = true }),
+        group = group,
         pattern = 'markdown',
         callback = function(ev)
           -- Notebooks only: plain .md files (READMEs, notes) don't get a pyright per code block.
-          if is_notebook(ev.buf) then
-            vim.schedule(function()
-              if vim.api.nvim_buf_is_valid(ev.buf) then
-                vim.api.nvim_buf_call(ev.buf, function()
-                  require('otter').activate { 'python' }
-                end)
-              end
-            end)
+          if not is_notebook(ev.buf) then
+            return
           end
+          vim.schedule(function()
+            if activate(ev.buf) then
+              return
+            end
+            vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave', 'BufWritePost' }, {
+              group = group,
+              buffer = ev.buf,
+              callback = function(e)
+                return activate(e.buf) -- true deletes this autocmd
+              end,
+            })
+          end)
         end,
       })
     end,
