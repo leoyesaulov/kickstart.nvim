@@ -33,18 +33,19 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 12. [Buffer Tabs (bufferline.nvim)](#buffer-tabs-bufferlinenvim)
 13. [Problems Panel (trouble.nvim)](#problems-panel-troublenvim)
 14. [Integrated Terminal (toggleterm.nvim)](#integrated-terminal-togglermnvim)
-15. [Debugging (DAP)](#debugging-dap)
-16. [Testing (neotest)](#testing-neotest)
-17. [Markdown Preview (markview.nvim)](#markdown-preview-markviewnvim)
-18. [Python](#python)
-19. [Jupyter Notebooks (molten.nvim)](#jupyter-notebooks-moltennvim)
-20. [Java](#java)
-21. [C / C++](#c--c)
-22. [Web Dev](#web-dev)
-23. [Docker](#docker)
-24. [Shell](#shell)
-25. [LaTeX](#latex)
-26. [Misc Commands](#misc-commands)
+15. [Running Files](#running-files)
+16. [Debugging (DAP)](#debugging-dap)
+17. [Testing (neotest)](#testing-neotest)
+18. [Markdown Preview (markview.nvim)](#markdown-preview-markviewnvim)
+19. [Python](#python)
+20. [Jupyter Notebooks (molten.nvim)](#jupyter-notebooks-moltennvim)
+21. [Java](#java)
+22. [C / C++](#c--c)
+23. [Web Dev](#web-dev)
+24. [Docker](#docker)
+25. [Shell](#shell)
+26. [LaTeX](#latex)
+27. [Misc Commands](#misc-commands)
 
 ---
 
@@ -60,7 +61,7 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 | `:checkhealth` | Run health checks (Neovim version, `git`, `make`, `unzip`, `rg`, `fd`, `tree-sitter` presence) |
 
 **Leader groups** (which-key labels shown after pressing `<Space>`): `s` Search, `t` Toggle/Test,
-`h` Git hunk, `m` Molten (notebooks), `x` Trouble (diagnostics), `j` Java, `c` Code, `g` Git.
+`h` Git hunk, `m` Molten (notebooks), `x` Trouble (diagnostics), `j` Java, `c` Code, `g` Git. `r` alone runs the current file.
 
 ## Core / Window Navigation
 
@@ -248,6 +249,22 @@ Aggregated diagnostics/quickfix list — the closest analog to an IDE's "Problem
 |---|---|
 | `<leader>tt` | Toggle a floating terminal |
 
+## Running Files
+
+`<leader>r` saves the current file and runs it in its own floating terminal
+(`lua/custom/plugins/run.lua`). The program can read stdin, and the output stays open after it
+exits: `<Esc><Esc>` then `:q` to close it, or just run again, which replaces the previous run's
+terminal. It never touches your `<leader>tt` shell. Running under the debugger is still `<F5>`.
+
+| Filetype | Runs |
+|---|---|
+| Python | `python <file>` from the file's directory. Interpreter: the venv picked with `<leader>cv`, else `$VIRTUAL_ENV`, else `.venv/` at the project root, else `python3` |
+| Java, in a project (jdtls attached) | Builds the workspace, then runs **this file's** class with the classpath and JDK jdtls resolved, from the project root. Refuses if the file has compile errors or no `main` |
+| Java, loose file (no jdtls) | `java <file>` (single-file source launch, Java 11+). Only works if the file uses no other project classes |
+
+Other filetypes show "no runner for <filetype>". To add one, add a `runners.<filetype>` function
+to `run.lua`: it gets the file path and calls `done(argv, cwd)`.
+
 ## Debugging (DAP)
 
 Shared `nvim-dap` + `nvim-dap-ui` base (`lua/kickstart/plugins/debug.lua`). Keymaps work the same
@@ -299,6 +316,7 @@ Active by default (loaded eagerly, no filetype trigger needed) — renders markd
 
 - `pyright` (types) + `ruff` (lint, format, import-sort — no separate black/isort) attach on every `.py` buffer.
 - `<leader>cv` — open the venv-selector picker (poetry/conda/virtualenv/pipenv); updates pyright's resolved interpreter.
+- `<leader>r` — run the current file with the selected venv's interpreter, see [Running Files](#running-files).
 - Debugging: debugpy via the shared [DAP](#debugging-dap) keymaps (`<F5>`, `<leader>b`, ...).
 - Testing: [neotest](#testing-neotest) (`<leader>tr`/`<leader>tf`/`<leader>td`/...), debug-nearest shares the debugpy adapter above.
 - Notebooks: see [Jupyter Notebooks](#jupyter-notebooks-moltennvim) — `.ipynb` opens as markdown; the same `<leader>m*` keys run `# %%` cells in plain `.py` files too.
@@ -425,6 +443,7 @@ under `stdpath('cache')/jdtls-workspace/<project>`.
 | `<leader>jo` | Organize imports |
 | `<leader>jt` | Run/debug the current test class |
 | `<leader>jm` | Run/debug the nearest test method |
+| `<leader>r` | Run this file's `main` in a floating terminal, see [Running Files](#running-files) (works without jdtls too) |
 | `<leader>jg` | Generate menu: constructor, getters/setters, `toString()`, `equals()`/`hashCode()` from the class's fields (like IntelliJ's Alt+Insert) |
 
 ### Java snippets
@@ -468,7 +487,8 @@ a constructor or accessors for several of them. It shows a picker of the real fi
 jdtls to be attached.
 
 Debugging a `main` method or a test uses the same shared [DAP](#debugging-dap) keymaps
-(`<F5>`, `<leader>b`, ...) once jdtls generates a run configuration.
+(`<F5>`, `<leader>b`, ...) once jdtls generates a run configuration. `<F5>` lists every main class
+in the project; to just run the current file's, use `<leader>r`.
 
 **"Security Warning! The gradle wrapper … could be malicious"**: jdtls only trusts
 `gradle-wrapper.jar` files whose sha256 is on Gradle's published list, and it treats every

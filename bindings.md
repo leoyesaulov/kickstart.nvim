@@ -49,6 +49,7 @@ table is currently `Disabled`.
 | `<leader>ms` | Normal | Notebook: restart kernel, clear outputs (asks which if several), logs progress | custom/plugins/jupyter.lua:434 | Active |
 | `<leader>mx` | Normal | Notebook: interrupt kernel | custom/plugins/jupyter.lua:433 | Active |
 | `<leader>q` | Normal | Open diagnostic quickfix list | init.lua:177 | Active |
+| `<leader>r` | Normal | Run current file in a floating terminal (Python, Java) | custom/plugins/run.lua:118 | Active |
 | `<leader>s.` | Normal | Search recent files | init.lua:442 | Active |
 | `<leader>s/` | Normal | Grep across open files | init.lua:456-461 | Active |
 | `<leader>sd` | Normal | Search diagnostics | init.lua:440 | Active |
@@ -123,6 +124,8 @@ table is currently `Disabled`.
   (`gg`, lazygit) were previously unused prefixes.
 - `<leader>m*` (molten / Jupyter notebooks) was previously unused; every binding under it is two
   keys, so none shadows another (`ma` vs `mA` differ by case). `<leader>j*` stays Java-only.
+- `<leader>r` (run current file) was previously unused, and nothing else starts with `<leader>r`,
+  so it fires without a which-key wait.
 - `]x` / `[x` (next/previous notebook cell) were picked because `]c` / `[c` belong to gitsigns.
 
 See [cheatsheet.md](cheatsheet.md) for grouped explanations, which-key group labels, and
