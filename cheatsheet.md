@@ -430,9 +430,10 @@ under `stdpath('cache')/jdtls-workspace/<project>`.
 ### Java snippets
 
 Type the trigger and accept it from the completion menu with `<C-y>` (snippets show a `~` after the
-label). Then `<Tab>`/`<S-Tab>` move between placeholders. These come from
+label, then a short description). Then `<Tab>`/`<S-Tab>` move between placeholders. These come from
 `lua/custom/snippets/java.lua` and work even without jdtls. jdtls also sends its own Eclipse-style
-templates (`sysout`, `foreach`, ...), but these snippets are ranked above them.
+templates (`sysout`, `foreach`, ...), but these snippets are ranked above them. Snippets are hidden
+right after `.`/`::`, so `obj.` only lists the object's methods and fields.
 
 **How the names work:**
 1. Well-known IntelliJ abbreviations stay as they are: `sout`, `souf`, `soutv`, `psvm`, `fori`, `psf`.

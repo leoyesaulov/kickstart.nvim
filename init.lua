@@ -905,7 +905,16 @@ require('lazy').setup({
         providers = {
           lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
           -- Rank own snippets above same-named LSP templates (jdtls's fori, main, ...).
-          snippets = { score_offset = 10 },
+          -- Hide them after member access (obj., Class::, ptr->, obj:) so only the LSP's members show there.
+          snippets = {
+            score_offset = 10,
+            -- Show each snippet's `desc` next to its trigger in the menu.
+            opts = { use_label_description = true },
+            should_show_items = function(ctx)
+              local before = ctx.line:sub(1, ctx.bounds.start_col - 1)
+              return not (before:match '[.:]$' or before:match '%->$')
+            end,
+          },
         },
       },
 

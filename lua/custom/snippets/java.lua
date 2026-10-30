@@ -114,7 +114,7 @@ return {
   snip('thr', 'throw new Exception', fmta('throw new <>Exception(<>);', { i(1), i(2) })),
   snip('thria', 'throw IllegalArgumentException', fmta('throw new IllegalArgumentException(<>);', { i(1) })),
   snip('thris', 'throw IllegalStateException', fmta('throw new IllegalStateException(<>);', { i(1) })),
-  snip('thrus', 'throw UnsupportedOperationException', fmta('throw new UnsupportedOperationException(<>);', { i(1) })),
+  snip('thrus', 'throw UnsupportedOperation', fmta('throw new UnsupportedOperationException(<>);', { i(1) })),
 
   -- Types (name from the file name)
   snip('cls', 'public class', fmta('public class <> {\n\t<>\n}', { f(classname), i(0) })),
@@ -126,7 +126,7 @@ return {
   snip('ctor', 'No-arg constructor', fmta('public <>() {\n\t<>\n}', { f(classname), i(0) })),
   snip(
     'ctorp',
-    'Constructor with one field parameter',
+    'Constructor with one field',
     fmta('public <>(<> <>) {\n\tthis.<> = <>;<>\n}', { f(classname), i(1, 'Type'), i(2, 'name'), rep(2), rep(2), i(0) })
   ),
 
@@ -143,7 +143,7 @@ return {
   snip('gs', 'Getter + setter', fmta(getter .. '\n\n' .. setter, { i(1, 'Type'), cap(2), i(2, 'name'), cap(2), rep(1), rep(2), rep(2), rep(2) })),
   snip(
     'fgs',
-    'Private field + getter + setter',
+    'Private field, getter, setter',
     fmta('private <> <>;\n\n' .. getter .. '\n\n' .. setter, { i(1, 'Type'), i(2, 'name'), rep(1), cap(2), rep(2), cap(2), rep(1), rep(2), rep(2), rep(2) })
   ),
 
