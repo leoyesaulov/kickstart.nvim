@@ -28,10 +28,10 @@ table is currently `Disabled`.
 | `<leader>hr` | Normal, Visual | Git: reset hunk | gitsigns.lua:40-45 | Active |
 | `<leader>hs` | Normal, Visual | Git: stage hunk | gitsigns.lua:37-44 | Active |
 | `<leader>hu` | Normal | Git: undo stage hunk | gitsigns.lua:47 | Active |
-| `<leader>jg` | Normal (Java buffers) | Java: generate menu (constructors, getters/setters, toString, equals/hashCode from fields) | custom/plugins/java.lua:183 | Active |
-| `<leader>jm` | Normal (Java buffers) | Java: run/debug nearest test method | custom/plugins/java.lua:182 | Active |
-| `<leader>jo` | Normal (Java buffers) | Java: organize imports | custom/plugins/java.lua:180 | Active |
-| `<leader>jt` | Normal (Java buffers) | Java: run/debug test class | custom/plugins/java.lua:181 | Active |
+| `<leader>jg` | Normal (Java buffers) | Java: generate menu (constructors, getters/setters, toString, equals/hashCode from fields) | custom/plugins/java.lua:158 | Active |
+| `<leader>jm` | Normal (Java buffers) | Java: run/debug nearest test method | custom/plugins/java.lua:157 | Active |
+| `<leader>jo` | Normal (Java buffers) | Java: organize imports | custom/plugins/java.lua:155 | Active |
+| `<leader>jt` | Normal (Java buffers) | Java: run/debug test class | custom/plugins/java.lua:156 | Active |
 | `<leader>mA` | Normal | Notebook: run all cells above the cursor (molten) | custom/plugins/jupyter.lua:426 | Active |
 | `<leader>ma` | Normal | Notebook: run all cells (molten) | custom/plugins/jupyter.lua:423 | Active |
 | `<leader>md` | Normal | Notebook: delete output of the cell under the cursor | custom/plugins/jupyter.lua:432 | Active |
