@@ -21,31 +21,32 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 ## Table of Contents
 1. [Basics](#basics)
 2. [Core / Window Navigation](#core--window-navigation)
-3. [Search & Telescope](#search--telescope)
-4. [LSP](#lsp)
-5. [Formatting](#formatting)
-6. [Linting](#linting)
-7. [Completion (blink.cmp)](#completion-blinkcmp)
-8. [Text Objects & Surround (mini.nvim)](#text-objects--surround-mininvim)
-9. [Git (gitsigns)](#git-gitsigns)
-10. [Git Panel (lazygit.nvim)](#git-panel-lazygitnvim)
-11. [File Explorer (neo-tree)](#file-explorer-neo-tree)
-12. [Buffer Tabs (bufferline.nvim)](#buffer-tabs-bufferlinenvim)
-13. [Problems Panel (trouble.nvim)](#problems-panel-troublenvim)
-14. [Integrated Terminal (toggleterm.nvim)](#integrated-terminal-togglermnvim)
-15. [Running Files](#running-files)
-16. [Debugging (DAP)](#debugging-dap)
-17. [Testing (neotest)](#testing-neotest)
-18. [Markdown Preview (markview.nvim)](#markdown-preview-markviewnvim)
-19. [Python](#python)
-20. [Jupyter Notebooks (molten.nvim)](#jupyter-notebooks-moltennvim)
-21. [Java](#java)
-22. [C / C++](#c--c)
-23. [Web Dev](#web-dev)
-24. [Docker](#docker)
-25. [Shell](#shell)
-26. [LaTeX](#latex)
-27. [Misc Commands](#misc-commands)
+3. [Everyday Editing](#everyday-editing) — commenting, undo, clipboard, search & replace, macros
+4. [Search & Telescope](#search--telescope)
+5. [LSP](#lsp)
+6. [Formatting](#formatting)
+7. [Linting](#linting)
+8. [Completion (blink.cmp)](#completion-blinkcmp)
+9. [Text Objects & Surround (mini.nvim)](#text-objects--surround-mininvim)
+10. [Git (gitsigns)](#git-gitsigns)
+11. [Git Panel (lazygit.nvim)](#git-panel-lazygitnvim)
+12. [File Explorer (neo-tree)](#file-explorer-neo-tree)
+13. [Buffer Tabs (bufferline.nvim)](#buffer-tabs-bufferlinenvim)
+14. [Problems Panel (trouble.nvim)](#problems-panel-troublenvim)
+15. [Integrated Terminal (toggleterm.nvim)](#integrated-terminal-togglermnvim)
+16. [Running Files](#running-files)
+17. [Debugging (DAP)](#debugging-dap)
+18. [Testing (neotest)](#testing-neotest)
+19. [Markdown Preview (markview.nvim)](#markdown-preview-markviewnvim)
+20. [Python](#python)
+21. [Jupyter Notebooks (molten.nvim)](#jupyter-notebooks-moltennvim)
+22. [Java](#java)
+23. [C / C++](#c--c)
+24. [Web Dev](#web-dev)
+25. [Docker](#docker)
+26. [Shell](#shell)
+27. [LaTeX](#latex)
+28. [Misc Commands](#misc-commands)
 
 ---
 
@@ -76,6 +77,142 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 | `<C-k>` | Normal | Move focus to window above |
 
 **Behavior:** Yanked text briefly highlights (`TextYankPost` autocommand) — try `yap`.
+
+## Everyday Editing
+
+Built-in Neovim keys and the options `init.lua` turns on. None of these are custom mappings, but
+they're the ones worth learning first. `:help <key>` explains any of them (e.g. `:help gcc`).
+
+### Commenting
+
+Built into Neovim (0.10+), no plugin. Uses the filetype's `'commentstring'` and is Treesitter-aware,
+so it picks the right comment style for embedded code: JS inside HTML, a ```` ```python ````
+fence in markdown or a notebook.
+
+| Key | Mode | Action |
+|---|---|---|
+| `gcc` | Normal | Toggle comment on the current line (`3gcc` = this line and the next 2) |
+| `gc{motion}` | Normal | Toggle comment over a motion: `gcap` paragraph, `gc2j` 3 lines, `gcG` to end of file |
+| `gc` | Visual | Toggle comment on the selected lines (`V`, `jj`, `gc`) |
+| `gc` | Operator-pending | Text object for the comment block around the cursor: `dgc` deletes it, `gcgc` uncomments it |
+| `.` | Normal | Repeat the last comment toggle on another line |
+
+### Editing
+
+| Key | Action |
+|---|---|
+| `u` / `<C-r>` | Undo / redo. Undo history is saved to disk (`undofile`), so it survives closing the file |
+| `:earlier 10m` / `:later 10m` | Jump the buffer back / forward in time (also `5f` = 5 saves ago) |
+| `.` | Repeat the last change |
+| `yyp` / `yyP` | Duplicate the line below / above |
+| `ddp` / `ddkP` | Move the line down / up (or `:m +1` / `:m -2`; Visual: `:m '>+1` / `:m '<-2`) |
+| `J` / `gJ` | Join the next line onto this one, with / without a space |
+| `>>` / `<<` | Indent / dedent the line. In Visual, `>` / `<`, then `gv` reselects to do it again |
+| `=ap` / `gg=G` | Re-indent the paragraph / whole file (`<leader>f` formats properly with the LSP/formatter) |
+| `~` / `gUiw` / `guiw` | Toggle case of a char / UPPERCASE a word / lowercase a word |
+| `<C-a>` / `<C-x>` | Increment / decrement the number under or after the cursor (`5<C-a>` adds 5) |
+| `g<C-a>` | Visual: turn a column of `0`s into `1, 2, 3, …` |
+| `<C-v>` then `I` / `$A` | Block select, then insert at the start / append at the end of every line. `<Esc>` applies it |
+| `gi` | Go back into Insert mode where you last left it |
+| `gv` | Reselect the last Visual selection |
+| `cl` | Replace one character and type (Vim's `s`; here `s` is the mini.surround prefix) |
+
+Indent width is detected per file by `guess-indent.nvim`, so `>>` and `<Tab>` match the file's
+existing style. Typing `(`, `[`, `{`, `"` or `'` inserts the closing one too (nvim-autopairs);
+typing the closer skips over it, `<BS>` deletes the pair, `<CR>` between `{}` opens an indented
+block.
+
+**In Insert mode:** `<C-w>` deletes the word before the cursor, `<C-u>` deletes to the start of the
+line, `<C-r>{reg}` pastes a register (`<C-r>"` last yank/delete, `<C-r>0` last yank), and `<C-o>`
+runs a single Normal-mode command, then returns to Insert.
+
+### Clipboard & registers
+
+The clipboard is synced with the OS (`clipboard=unnamedplus`): `y` copies to the system clipboard
+and `p` pastes from it. **Deletes copy too**, so `dd`/`x`/`c` overwrite whatever you copied.
+
+| Key | Action |
+|---|---|
+| `"_dd` / `"_x` / `"_ciw` | Delete or change into the black hole register, leaving the clipboard alone |
+| `"0p` | Paste the last **yank**, even after deleting things since |
+| `P` | Visual: replace the selection with the clipboard, without copying the replaced text (paste it again on the next selection) |
+| `"ayy` / `"ap` | Yank into / paste from named register `a` (any letter); `"Ayy` appends to it |
+| `:reg` | Show what's in every register |
+
+### Search & replace
+
+| Key / Command | Action |
+|---|---|
+| `/text` / `?text` | Search forward / backward; `n` / `N` next / previous match |
+| `*` / `#` | Search for the word under the cursor, forward / backward |
+| *(automatic)* | Lowercase searches ignore case; any capital letter makes it case-sensitive (`\C` forces it) |
+| `:%s/old/new/g` | Replace in the whole file. A split previews every change live as you type (`inccommand`) |
+| `:%s/old/new/gc` | Same, but ask `y`/`n`/`a`(all)/`q` at each match |
+| `V` … `:s/old/new/g` | Replace only in the selected lines (`:'<,'>` is filled in for you) |
+| `*` then `cgn` new `<Esc>`, `.` `.` | Change the next match, then `.` changes each following one. `n` skips one |
+| `<leader>sg` | Search the whole project (see [Search & Telescope](#search--telescope)) |
+
+### Moving around
+
+| Key | Action |
+|---|---|
+| `<C-d>` / `<C-u>` | Scroll half a page down / up |
+| `zz` / `zt` / `zb` | Scroll so the cursor line is centered / at the top / at the bottom |
+| `%` | Jump to the matching bracket |
+| `{` / `}` | Previous / next blank line (paragraph) |
+| `f{char}` / `t{char}` | Jump to / just before the next `{char}` on the line; `;` / `,` repeat forward / back. `F` / `T` go left |
+| `g;` / `g,` | Jump back / forward through the places you **edited** (changelist) |
+| `<C-o>` / `<C-i>` | Jump back / forward through the places you **jumped** (jumplist) |
+| `<C-^>` | Switch to the previous buffer |
+| `gf` | Open the file path under the cursor |
+| `ma` … `` `a `` | Set mark `a`, jump back to it. Capital letters (`mA`) work across files |
+
+> `<C-i>` and `<Tab>` are the same key in terminals that don't support the extended keyboard
+> protocol, so there `<C-i>` switches buffer tabs (bufferline) instead of jumping forward.
+> Ghostty and kitty tell them apart.
+
+### Windows, buffers & files
+
+| Key / Command | Action |
+|---|---|
+| `<C-w>v` / `<C-w>s` | Split vertically (opens right) / horizontally (opens below) |
+| `<C-h/j/k/l>` | Move between windows (see [Core](#core--window-navigation)) |
+| `<C-w>q` / `<C-w>o` | Close this window / close every other window |
+| `<C-w>=` | Make all windows the same size. Or drag a split's border with the mouse |
+| `:bd` | Close the current buffer (its tab in bufferline) |
+| `:w` / `:wa` | Save / save all |
+| `:q` / `:qa` | Quit the window / quit everything. With unsaved changes you're asked whether to save (`confirm`) |
+| `ZZ` / `ZQ` | Save and quit / quit without saving |
+| `:e!` | Throw away unsaved changes and reload the file from disk |
+
+### Spelling
+
+| Key / Command | Action |
+|---|---|
+| `:set spell` / `:set nospell` | Underline misspelled words in this window (comments and strings only, in code) |
+| `]s` / `[s` | Next / previous misspelled word |
+| `z=` | Suggestions for the word under the cursor (`1z=` takes the first one) |
+| `zg` / `zw` | Add the word to your dictionary / mark it as wrong |
+
+### Macros
+
+| Key | Action |
+|---|---|
+| `qa` … `q` | Record keystrokes into register `a` |
+| `@a` / `@@` | Play macro `a` / play the last played macro again (`10@a` = 10 times) |
+| `Q` | Replay the last **recorded** macro |
+| `V` … `:norm @a` | Run macro `a` on every selected line |
+
+### TODO comments
+
+`todo-comments.nvim` highlights `TODO:`, `FIXME:`, `HACK:`, `WARN:`, `PERF:`, `NOTE:` and `TEST:` in
+comments (the colon matters). It ships no keymaps; these commands list them:
+
+| Command | Action |
+|---|---|
+| `:TodoTelescope` | Fuzzy-find every TODO/FIXME/... in the project |
+| `:Trouble todo` | Same list in the [Trouble](#problems-panel-troublenvim) panel |
+| `:TodoQuickFix` | Same list in the quickfix window |
 
 ## Search & Telescope
 
