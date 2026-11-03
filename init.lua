@@ -244,6 +244,13 @@ rtp:prepend(lazypath)
 --  To update plugins you can run
 --    :Lazy update
 --
+
+-- blink.cmp: is the word being completed right after member access (obj., Class::, ptr->, obj:)?
+local function after_member_access(ctx)
+  local before = ctx.line:sub(1, ctx.bounds.start_col - 1)
+  return before:match '[.:]$' or before:match '%->$'
+end
+
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
@@ -904,15 +911,27 @@ require('lazy').setup({
         default = { 'lsp', 'path', 'snippets', 'lazydev' },
         providers = {
           lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
-          -- Rank own snippets above same-named LSP templates (jdtls's fori, main, ...).
-          -- Hide them after member access (obj., Class::, ptr->, obj:) so only the LSP's members show there.
+          -- Drop jdtls's code templates (sysout, ifelse, class, ...): lua/custom/snippets/java.lua
+          -- covers each one. Keep its postfix templates (list.for, x.nnull), which only show after `.`.
+          lsp = {
+            transform_items = function(ctx, items)
+              if after_member_access(ctx) then
+                return items
+              end
+              local snippet = require('blink.cmp.types').CompletionItemKind.Snippet
+              return vim.tbl_filter(function(item)
+                return not (item.client_name == 'jdtls' and item.kind == snippet)
+              end, items)
+            end,
+          },
+          -- Rank own snippets above LSP items (+10). Hide them after member access so only the
+          -- LSP's members show there.
           snippets = {
             score_offset = 10,
             -- Show each snippet's `desc` next to its trigger in the menu.
             opts = { use_label_description = true },
             should_show_items = function(ctx)
-              local before = ctx.line:sub(1, ctx.bounds.start_col - 1)
-              return not (before:match '[.:]$' or before:match '%->$')
+              return not after_member_access(ctx)
             end,
           },
         },

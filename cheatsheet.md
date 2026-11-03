@@ -470,9 +470,10 @@ offers jdtls's "Add unimplemented methods" quick fix, which adds all of them wit
 
 Type the trigger and accept it from the completion menu with `<C-y>` (snippets show a `~` after the
 label, then a short description). Then `<Tab>`/`<S-Tab>` move between placeholders. These come from
-`lua/custom/snippets/java.lua` and work even without jdtls. jdtls also sends its own Eclipse-style
-templates (`sysout`, `foreach`, ...), but these snippets are ranked above them. Snippets are hidden
-right after `.`/`::`, so `obj.` only lists the object's methods and fields.
+`lua/custom/snippets/java.lua` and work even without jdtls. jdtls's own Eclipse-style templates
+(`sysout`, `ifelse`, `class`, ...) are filtered out of the menu, since these snippets replace them.
+Its postfix templates (`list.for`, `x.nnull`, `x.var`) still show after `.`. Snippets are hidden
+right after `.`/`::`, so `obj.` only lists the object's methods, fields and postfix templates.
 
 **How the names work:**
 1. Well-known IntelliJ abbreviations stay as they are: `sout`, `souf`, `soutv`, `psvm`, `fori`, `psf`.
@@ -486,7 +487,7 @@ right after `.`/`::`, so `obj.` only lists the object's methods and fields.
 | Print (`so` = out, `se` = err) | `sout` println · `souf` printf · `soutv` `"x = " + x` · `soutm` `"Class.method"` · `soutp` all method params · `serr` · `serf` |
 | Entry point | `psvm` / `main` |
 | Loops | `fori` index · `forr` reverse index · `fore` for-each · `wh` while · `dowh` do-while |
-| Conditionals | `ife` if/else · `ifn` if null · `ifnn` if not null · `elif` else-if |
+| Conditionals | `if` if · `ife` if/else · `ifn` if null · `ifnn` if not null · `elif` else-if |
 | Switch | `sw` arrow switch · `swe` switch expression (`var x = switch …`) |
 | Try | `tryc` catch · `tryf` finally · `trycf` catch+finally · `tryr` try-with-resources |
 | Throw | `thr` any `…Exception` · `thria` IllegalArgument · `thris` IllegalState · `thrus` UnsupportedOperation |
@@ -496,7 +497,7 @@ right after `.`/`::`, so `obj.` only lists the object's methods and fields.
 | Accessors | `get` getter · `is` boolean getter · `set` setter · `gs` getter+setter · `fgs` field+getter+setter |
 | Methods | `m` public · `mp` private · `ms` public static |
 | Collections (impl initials) | `al` ArrayList · `hm` HashMap · `hs` HashSet |
-| Misc | `ov` `@Override` · `test` JUnit 5 `@Test` method · `rnn` `Objects.requireNonNull(x, "x")` · `scan` `Scanner(System.in)` |
+| Misc | `ov` `@Override` · `test` JUnit 5 `@Test` method · `rnn` `Objects.requireNonNull(x, "x")` · `new` `Object obj = new Object()` · `scan` `Scanner(System.in)` |
 
 In the accessor snippets you type the type and the field name once. The method names are built
 as you type: typing `age` gives `getAge`/`setAge`.

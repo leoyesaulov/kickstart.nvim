@@ -6,6 +6,9 @@
 --   3. A suffix letter means the same thing in every family:
 --      f = format/finally, r = reverse/resources, e = else/enhanced, n = null, nn = not null.
 --
+-- jdtls's own code templates (sysout, ifelse, class, ...) are filtered out of blink in init.lua;
+-- the snippets here replace them. Its postfix templates (list.for, x.nnull) stay.
+--
 -- Field-aware generation (constructor from fields, getters/setters for existing fields,
 -- toString, equals/hashCode) is jdtls's job: <leader>jg in a Java buffer.
 --
@@ -95,6 +98,7 @@ return {
   snip('dowh', 'do-while loop', fmta('do {\n\t<>\n} while (<>);', { i(0), i(1, 'true') })),
 
   -- Conditionals
+  snip('if', 'if statement', fmta('if (<>) {\n\t<>\n}', { i(1), i(0) })),
   snip('ife', 'if / else', fmta('if (<>) {\n\t<>\n} else {\n\t<>\n}', { i(1), i(2), i(0) })),
   snip('ifn', 'if null', fmta('if (<> == null) {\n\t<>\n}', { i(1), i(0) })),
   snip('ifnn', 'if not null', fmta('if (<> != null) {\n\t<>\n}', { i(1), i(0) })),
@@ -161,5 +165,6 @@ return {
   snip('ov', '@Override', t '@Override'),
   snip('test', 'JUnit 5 test method', fmta('@Test\nvoid <>() {\n\t<>\n}', { i(1, 'name'), i(0) })),
   snip('rnn', 'Objects.requireNonNull', fmta('Objects.requireNonNull(<>, "<>");', { i(1, 'x'), rep(1) })),
+  snip('new', 'new object', fmta('<> <> = new <>(<>);', { i(1, 'Object'), i(2, 'obj'), rep(1), i(3) })),
   snip('scan', 'Scanner on System.in', t 'Scanner sc = new Scanner(System.in);'),
 }
