@@ -78,6 +78,18 @@ local function run()
     end
   end
 
+  -- java.lua's config (run by the Sample.java fixture) swaps in the checkbox field picker and
+  -- registers the getter/setter and override prompt commands.
+  if type(vim.lsp.commands['java.action.generateAccessorsPrompt']) ~= 'function' then
+    h.fail 'java.action.generateAccessorsPrompt is not registered in vim.lsp.commands'
+  end
+  if vim.lsp.commands['java.action.overrideMethodsPrompt'] ~= require('custom.jdtls_picker').override_methods then
+    h.fail "java.action.overrideMethodsPrompt is still nvim-jdtls's handler, not custom.jdtls_picker's"
+  end
+  if require('jdtls.ui').pick_many ~= require('custom.jdtls_picker').pick_many then
+    h.fail 'jdtls.ui.pick_many was not replaced by custom.jdtls_picker'
+  end
+
   -- Everything still lazy (cmd/keys-triggered: trouble, lazygit, toggleterm, ...) gets its
   -- config run now, so a broken config can't hide behind a trigger nobody exercised.
   local pending = {}

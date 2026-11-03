@@ -444,7 +444,27 @@ under `stdpath('cache')/jdtls-workspace/<project>`.
 | `<leader>jt` | Run/debug the current test class |
 | `<leader>jm` | Run/debug the nearest test method |
 | `<leader>r` | Run this file's `main` in a floating terminal, see [Running Files](#running-files) (works without jdtls too) |
-| `<leader>jg` | Generate menu: constructor, getters/setters, `toString()`, `equals()`/`hashCode()` from the class's fields (like IntelliJ's Alt+Insert) |
+| `<leader>jg` | Generate menu, like IntelliJ's Alt+Insert: Constructors… / Getters… / Setters… / Getters and Setters… / `toString()` / `equals()`/`hashCode()` / Override/Implement Methods… |
+| `<leader>ji` | Implement/override methods, like IntelliJ's Ctrl+I: stubs for the abstract methods of the class's interfaces and parent classes |
+
+Each generate action opens a checkbox list of the class's fields (`[x] name: Type`), so you pick
+which fields go into the constructor or get accessors. Getters/setters start with every field
+checked; constructors start unchecked (jdtls's default). Fields that already have the accessor, and
+setters for `final` fields, aren't listed. Picking zero fields for a constructor gives a no-arg one.
+
+Implement/override (`<leader>ji`, or Override/Implement Methods… in the menu) uses the same picker.
+Abstract methods from interfaces and parent classes come first, marked `(abstract)` and already
+checked, so `<leader>ji` `<CR>` stubs out everything the class still has to implement. Other
+overridable methods (`toString`, `equals`, non-abstract parent methods, …) are listed unchecked
+below them. Also, on a class with the "must implement the inherited abstract method" error, `gra`
+offers jdtls's "Add unimplemented methods" quick fix, which adds all of them with no picker.
+
+| Key (in the picker) | Action |
+|---|---|
+| `<Space>` / `<Tab>` | Toggle the field/method under the cursor, move down |
+| `a` | Check all / uncheck all |
+| `<CR>` | Generate with the checked items |
+| `q` / `<Esc>` | Cancel, nothing is inserted |
 
 ### Java snippets
 

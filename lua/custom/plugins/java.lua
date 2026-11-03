@@ -138,9 +138,11 @@ return {
         -- workspace/didChangeConfiguration that `settings` produces arrives.
         init_options = {
           bundles = bundles,
-          -- Unlocks the interactive "Generate Constructors… / Getters and Setters… / toString() /
-          -- hashCode() and equals()" source actions (field pickers via vim.ui.select).
-          extendedClientCapabilities = jdtls.extendedClientCapabilities,
+          -- Unlocks the interactive "Generate Constructors… / toString() / hashCode() and
+          -- equals()" source actions. advancedGenerateAccessorsSupport (not in nvim-jdtls's table)
+          -- turns jdtls's all-fields "Generate Getters and Setters" into "Generate Getters… /
+          -- Setters… / Getters and Setters…" prompts, handled by custom.jdtls_picker.
+          extendedClientCapabilities = vim.tbl_extend('force', jdtls.extendedClientCapabilities, { advancedGenerateAccessorsSupport = true }),
           settings = settings,
         },
         settings = settings,
@@ -157,7 +159,8 @@ return {
           map('<leader>jm', require('jdtls.dap').test_nearest_method, 'Test nearest [M]ethod')
           map('<leader>jg', function()
             vim.lsp.buf.code_action { context = { only = { 'source' } } }
-          end, '[G]enerate (ctor/getters/setters/toString/equals)')
+          end, '[G]enerate (ctor/getters/setters/toString/equals/override)')
+          map('<leader>ji', require('custom.jdtls_picker').implement_methods, '[I]mplement/override methods')
         end,
       }
 
@@ -200,6 +203,17 @@ return {
         end
       end
     end, { desc = "Trust this project's Gradle wrapper jar for jdtls and restart it" })
+
+    -- Field pickers for the generate actions: a checkbox float instead of nvim-jdtls's numbered
+    -- input() prompt (nvim-jdtls looks up ui.pick_many at call time), plus the getter/setter
+    -- prompt command nvim-jdtls doesn't implement and an override prompt that pre-checks
+    -- abstract methods. Loading `jdtls` copies its own commands into vim.lsp.commands, so it has
+    -- to happen before ours go in or it would overwrite the override handler.
+    require 'jdtls'
+    local picker = require 'custom.jdtls_picker'
+    require('jdtls.ui').pick_many = picker.pick_many
+    vim.lsp.commands['java.action.generateAccessorsPrompt'] = picker.generate_accessors
+    vim.lsp.commands['java.action.overrideMethodsPrompt'] = picker.override_methods
 
     vim.api.nvim_create_autocmd('FileType', { pattern = 'java', callback = attach_jdtls })
     attach_jdtls()

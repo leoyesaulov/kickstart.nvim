@@ -28,10 +28,11 @@ table is currently `Disabled`.
 | `<leader>hr` | Normal, Visual | Git: reset hunk | gitsigns.lua:40-45 | Active |
 | `<leader>hs` | Normal, Visual | Git: stage hunk | gitsigns.lua:37-44 | Active |
 | `<leader>hu` | Normal | Git: undo stage hunk | gitsigns.lua:47 | Active |
-| `<leader>jg` | Normal (Java buffers) | Java: generate menu (constructors, getters/setters, toString, equals/hashCode from fields) | custom/plugins/java.lua:158 | Active |
-| `<leader>jm` | Normal (Java buffers) | Java: run/debug nearest test method | custom/plugins/java.lua:157 | Active |
-| `<leader>jo` | Normal (Java buffers) | Java: organize imports | custom/plugins/java.lua:155 | Active |
-| `<leader>jt` | Normal (Java buffers) | Java: run/debug test class | custom/plugins/java.lua:156 | Active |
+| `<leader>jg` | Normal (Java buffers) | Java: generate menu (constructors, getters, setters, getters+setters, toString, equals/hashCode, override/implement methods); each opens a field checkbox picker | custom/plugins/java.lua:160 | Active |
+| `<leader>ji` | Normal (Java buffers) | Java: implement/override methods — checkbox picker with abstract interface/parent-class methods listed first and pre-checked | custom/plugins/java.lua:163 | Active |
+| `<leader>jm` | Normal (Java buffers) | Java: run/debug nearest test method | custom/plugins/java.lua:159 | Active |
+| `<leader>jo` | Normal (Java buffers) | Java: organize imports | custom/plugins/java.lua:157 | Active |
+| `<leader>jt` | Normal (Java buffers) | Java: run/debug test class | custom/plugins/java.lua:158 | Active |
 | `<leader>mA` | Normal | Notebook: run all cells above the cursor (molten) | custom/plugins/jupyter.lua:426 | Active |
 | `<leader>ma` | Normal | Notebook: run all cells (molten) | custom/plugins/jupyter.lua:423 | Active |
 | `<leader>md` | Normal | Notebook: delete output of the cell under the cursor | custom/plugins/jupyter.lua:432 | Active |
@@ -94,6 +95,10 @@ table is currently `Disabled`.
 | `<Tab>` | Normal (bufferline) | Next buffer tab | custom/plugins/ui.lua:13 | Active |
 | `<S-Tab>` | Normal (bufferline) | Previous buffer tab | custom/plugins/ui.lua:14 | Active |
 | `<Esc>` | Select (snippet placeholder) | Exit to Normal mode, keep placeholder text | Vim built-in | Active |
+| `<Space>` / `<Tab>` | Normal (Java field picker float) | Toggle the field/method under the cursor, move down | custom/jdtls_picker.lua:82 | Active |
+| `a` | Normal (Java field picker float) | Check all / uncheck all | custom/jdtls_picker.lua:88 | Active |
+| `<CR>` | Normal (Java field picker float) | Generate with the checked items | custom/jdtls_picker.lua:97 | Active |
+| `q` / `<Esc>` | Normal (Java field picker float) | Cancel, insert nothing | custom/jdtls_picker.lua:100 | Active |
 | `<F1>` | — | Debug: step into | debug.lua:35-41 | Active |
 | `<F2>` | — | Debug: step over | debug.lua:42-48 | Active |
 | `<F3>` | — | Debug: step out | debug.lua:49-55 | Active |
