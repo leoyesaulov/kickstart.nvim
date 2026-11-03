@@ -251,7 +251,7 @@ Aggregated diagnostics/quickfix list — the closest analog to an IDE's "Problem
 
 ## Running Files
 
-`<leader>r` saves the current file and runs it in its own floating terminal
+`<leader>r` saves the current file and runs it in a terminal split across the bottom
 (`lua/custom/plugins/run.lua`). The program can read stdin, and the output stays open after it
 exits: `<Esc><Esc>` then `:q` to close it, or just run again, which replaces the previous run's
 terminal. It never touches your `<leader>tt` shell. Running under the debugger is still `<F5>`.
@@ -443,7 +443,7 @@ under `stdpath('cache')/jdtls-workspace/<project>`.
 | `<leader>jo` | Organize imports |
 | `<leader>jt` | Run/debug the current test class |
 | `<leader>jm` | Run/debug the nearest test method |
-| `<leader>r` | Run this file's `main` in a floating terminal, see [Running Files](#running-files) (works without jdtls too) |
+| `<leader>r` | Run this file's `main` in a split terminal, see [Running Files](#running-files) (works without jdtls too) |
 | `<leader>jg` | Generate menu, like IntelliJ's Alt+Insert: Constructors… / Getters… / Setters… / Getters and Setters… / `toString()` / `equals()`/`hashCode()` / Override/Implement Methods… |
 | `<leader>ji` | Implement/override methods, like IntelliJ's Ctrl+I: stubs for the abstract methods of the class's interfaces and parent classes |
 

@@ -50,7 +50,7 @@ table is currently `Disabled`.
 | `<leader>ms` | Normal | Notebook: restart kernel, clear outputs (asks which if several), logs progress | custom/plugins/jupyter.lua:434 | Active |
 | `<leader>mx` | Normal | Notebook: interrupt kernel | custom/plugins/jupyter.lua:433 | Active |
 | `<leader>q` | Normal | Open diagnostic quickfix list | init.lua:177 | Active |
-| `<leader>r` | Normal | Run current file in a floating terminal (Python, Java) | custom/plugins/run.lua:118 | Active |
+| `<leader>r` | Normal | Run current file in a horizontal split terminal (Python, Java) | custom/plugins/run.lua:118 | Active |
 | `<leader>s.` | Normal | Search recent files | init.lua:442 | Active |
 | `<leader>s/` | Normal | Grep across open files | init.lua:456-461 | Active |
 | `<leader>sd` | Normal | Search diagnostics | init.lua:440 | Active |

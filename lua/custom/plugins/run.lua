@@ -1,4 +1,4 @@
--- <leader>r: run the current file in a floating terminal, whatever its language.
+-- <leader>r: run the current file in a terminal split below the editor, whatever its language.
 --
 -- Each runner gets the file's absolute path and calls `done(cmd, cwd)` with the argv to run, or
 -- returns without calling it after notifying why it can't. Runners are async because Java has to
@@ -104,10 +104,10 @@ local function run()
       last = require('toggleterm.terminal').Terminal:new {
         cmd = table.concat(vim.tbl_map(vim.fn.shellescape, cmd), ' '),
         dir = cwd,
-        direction = 'float',
+        direction = 'horizontal',
         close_on_exit = false,
       }
-      last:open()
+      last:open(15)
     end)
   end)
 end
