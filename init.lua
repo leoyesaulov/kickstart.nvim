@@ -251,6 +251,10 @@ local function after_member_access(ctx)
   return before:match '[.:]$' or before:match '%->$'
 end
 
+-- blink.cmp: rank items you accept often in this project higher (Java/Python only).
+local completion_usage = require 'custom.completion_usage'
+completion_usage.setup()
+
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
@@ -913,21 +917,25 @@ require('lazy').setup({
           lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
           -- Drop jdtls's code templates (sysout, ifelse, class, ...): lua/custom/snippets/java.lua
           -- covers each one. Keep its postfix templates (list.for, x.nnull), which only show after `.`.
+          -- Then add the per-project usage bonus (lua/custom/completion_usage.lua).
           lsp = {
             transform_items = function(ctx, items)
-              if after_member_access(ctx) then
-                return items
+              if not after_member_access(ctx) then
+                local snippet = require('blink.cmp.types').CompletionItemKind.Snippet
+                items = vim.tbl_filter(function(item)
+                  return not (item.client_name == 'jdtls' and item.kind == snippet)
+                end, items)
               end
-              local snippet = require('blink.cmp.types').CompletionItemKind.Snippet
-              return vim.tbl_filter(function(item)
-                return not (item.client_name == 'jdtls' and item.kind == snippet)
-              end, items)
+              return completion_usage.boost(ctx, items)
             end,
           },
-          -- Rank own snippets above LSP items (+10). Hide them after member access so only the
-          -- LSP's members show there.
+          -- Rank own snippets above LSP items (+10), plus the per-project usage bonus. Hide them
+          -- after member access so only the LSP's members show there.
           snippets = {
             score_offset = 10,
+            transform_items = function(ctx, items)
+              return completion_usage.boost(ctx, items)
+            end,
             -- Show each snippet's `desc` next to its trigger in the menu.
             opts = { use_label_description = true },
             should_show_items = function(ctx)

@@ -126,6 +126,55 @@ local function run()
     vim.api.nvim_buf_delete(buf, { force = true })
   end
 
+  -- Per-project completion usage ranking (custom.completion_usage).
+  local usage = require 'custom.completion_usage'
+  for count, want in pairs { [0] = 0, [1] = 3, [3] = 6, [7] = 9, [100] = 12 } do
+    if usage.bonus(count) ~= want then
+      h.fail(('completion_usage.bonus(%d) = %d, want %d'):format(count, usage.bonus(count), want))
+    end
+  end
+  local real_state_dir = usage.state_dir
+  usage.state_dir = tmp .. '/usage-state'
+  local function usage_buf(path, ft)
+    vim.fn.mkdir(vim.fs.dirname(path), 'p')
+    local buf = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_buf_set_name(buf, path)
+    vim.bo[buf].filetype = ft
+    return buf
+  end
+  local function boosted(buf)
+    local item = { label = 'foo(int) : void', filterText = 'foo', kind = 2 }
+    usage.boost({ bufnr = buf }, { item })
+    return item.score_offset or 0
+  end
+  vim.fn.mkdir(tmp .. '/projA/.git', 'p')
+  vim.fn.mkdir(tmp .. '/projB/.git', 'p')
+  local java_buf = usage_buf(tmp .. '/projA/src/A.java', 'java')
+  local py_buf = usage_buf(tmp .. '/projB/b.py', 'python')
+  local lua_buf = usage_buf(tmp .. '/projA/c.lua', 'lua')
+  usage.record(java_buf, { label = 'foo(String s) : void', filterText = 'foo', kind = 2 })
+  usage.record(java_buf, { label = 'foo(int) : void', filterText = 'foo', kind = 2 })
+  usage.record(lua_buf, { label = 'foo', kind = 2 })
+  if boosted(java_buf) ~= 4 then
+    h.fail(('completion_usage: java item boosted by %d after 2 uses, want 4'):format(boosted(java_buf)))
+  end
+  if boosted(py_buf) ~= 0 then
+    h.fail 'completion_usage: usage in projA leaked into projB'
+  end
+  if boosted(lua_buf) ~= 0 then
+    h.fail 'completion_usage: lua buffers should not be tracked'
+  end
+  usage.flush()
+  local db_files = vim.fn.glob(usage.state_dir .. '/projA-*.json', false, true)
+  local db = #db_files == 1 and vim.json.decode(table.concat(vim.fn.readfile(db_files[1]), '\n')) or {}
+  if db['java\t2\tfoo'] ~= 2 or vim.tbl_count(db) ~= 1 then
+    h.fail(('completion_usage: projA db is %s, want { "java\\t2\\tfoo": 2 }'):format(vim.inspect(db)))
+  end
+  for _, buf in ipairs { java_buf, py_buf, lua_buf } do
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
+  usage.state_dir = real_state_dir
+
   -- jdtls indentation follows the buffer (custom.jdtls_indent).
   local jdtls_indent = require 'custom.jdtls_indent'
   local ind_buf = vim.api.nvim_create_buf(true, false)

@@ -293,6 +293,11 @@ either** — clangd's own `textDocument/formatting` covers it via LSP fallback.
 Sources: LSP, path, snippets (LuaSnip), lazydev (Neovim Lua API). Your own snippets go in
 `lua/custom/snippets/<filetype>.lua`. Currently that's Java only, see [Java snippets](#java-snippets).
 
+**Usage ranking (Java, Python):** items you accept often in the current project (git root, or the
+nearest `pom.xml`/`build.gradle`/`pyproject.toml`/...) rank higher, by up to +12 score (about one
+matched character). Overloads share a count. After `obj.` the members you use most come first.
+Stats are per project in `~/.local/state/nvim/completion-usage/`. Delete a project's file to reset it.
+
 > Note: `<Tab>`/`<S-Tab>` are also bound in **Normal mode** by bufferline.nvim (see
 > [Buffer Tabs](#buffer-tabs-bufferlinenvim)) — no conflict, since blink.cmp's mapping is
 > Insert/Select-mode only.
