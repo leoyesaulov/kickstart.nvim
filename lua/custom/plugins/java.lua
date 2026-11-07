@@ -96,6 +96,9 @@ return {
       local settings = {
         java = {
           signatureHelp = { enabled = true },
+          -- Indent generated code like this buffer (tabs vs. spaces, width); kept in sync per
+          -- buffer by lua/custom/jdtls_indent.lua.
+          format = require('custom.jdtls_indent').format_settings(0),
           completion = { favoriteStaticMembers = {} },
           -- Left nil when empty: vim.json encodes {} as an object, but jdtls expects a list.
           imports = {
@@ -166,6 +169,8 @@ return {
 
       jdtls.start_or_attach(config)
     end
+
+    require('custom.jdtls_indent').setup()
 
     vim.api.nvim_create_user_command('JdtTrustGradleWrapper', function()
       local root = find_root()

@@ -596,6 +596,10 @@ overridable methods (`toString`, `equals`, non-abstract parent methods, …) are
 below them. Also, on a class with the "must implement the inherited abstract method" error, `gra`
 offers jdtls's "Add unimplemented methods" quick fix, which adds all of them with no picker.
 
+Generated code (`<leader>jg`, `<leader>ji`, multi-line completions) is indented like the current
+buffer. Tabs vs. spaces and the width come from `expandtab`/`shiftwidth`, which guess-indent detects
+from the file. Change them with `:set` and the next generated code follows.
+
 | Key (in the picker) | Action |
 |---|---|
 | `<Space>` / `<Tab>` | Toggle the field/method under the cursor, move down |

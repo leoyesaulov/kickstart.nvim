@@ -90,6 +90,49 @@ local function run()
     h.fail 'jdtls.ui.pick_many was not replaced by custom.jdtls_picker'
   end
 
+  -- jdtls indentation follows the buffer (custom.jdtls_indent).
+  local jdtls_indent = require 'custom.jdtls_indent'
+  local ind_buf = vim.api.nvim_create_buf(true, false)
+  vim.bo[ind_buf].expandtab = false
+  vim.bo[ind_buf].tabstop = 8
+  vim.bo[ind_buf].shiftwidth = 0
+  local fmt = jdtls_indent.format_settings(ind_buf)
+  if fmt.insertSpaces ~= false or fmt.tabSize ~= 8 then
+    h.fail(('jdtls_indent: noexpandtab ts=8 sw=0 gave %s'):format(vim.inspect(fmt)))
+  end
+  vim.bo[ind_buf].expandtab = true
+  vim.bo[ind_buf].shiftwidth = 2
+  fmt = jdtls_indent.format_settings(ind_buf)
+  if fmt.insertSpaces ~= true or fmt.tabSize ~= 2 then
+    h.fail(('jdtls_indent: expandtab sw=2 gave %s'):format(vim.inspect(fmt)))
+  end
+  local notifications = {}
+  local fake_client = {
+    id = 99,
+    name = 'jdtls',
+    settings = { java = { imports = { x = 1 } } },
+    notify = function(_, method, params)
+      table.insert(notifications, { method = method, params = vim.deepcopy(params) })
+    end,
+  }
+  local real_get_clients = vim.lsp.get_clients
+  vim.lsp.get_clients = function()
+    return { fake_client }
+  end
+  jdtls_indent.sync(ind_buf)
+  jdtls_indent.sync(ind_buf)
+  vim.lsp.get_clients = real_get_clients
+  local sent_settings = notifications[1] and notifications[1].params.settings or {}
+  if
+    #notifications ~= 1
+    or notifications[1].method ~= 'workspace/didChangeConfiguration'
+    or vim.tbl_get(sent_settings, 'java', 'imports', 'x') ~= 1
+    or not vim.deep_equal(vim.tbl_get(sent_settings, 'java', 'format'), { insertSpaces = true, tabSize = 2 })
+  then
+    h.fail(('jdtls_indent.sync sent %s, want one full didChangeConfiguration'):format(vim.inspect(notifications)))
+  end
+  vim.api.nvim_buf_delete(ind_buf, { force = true })
+
   -- Everything still lazy (cmd/keys-triggered: trouble, lazygit, toggleterm, ...) gets its
   -- config run now, so a broken config can't hide behind a trigger nobody exercised.
   local pending = {}
