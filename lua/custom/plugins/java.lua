@@ -11,6 +11,17 @@
 return {
   'mfussenegger/nvim-jdtls',
   ft = 'java',
+  -- Runs at startup (before the ft lazy-load), so even the first Java buffer gets its missing
+  -- `package …;` line inferred from its path under src/: lua/custom/java_package.lua.
+  init = function()
+    vim.api.nvim_create_autocmd('FileType', {
+      group = vim.api.nvim_create_augroup('custom-java-package', { clear = true }),
+      pattern = 'java',
+      callback = function(ev)
+        require('custom.java_package').ensure(ev.buf)
+      end,
+    })
+  end,
   config = function()
     local find_java = require('custom.java_home').find_java
 

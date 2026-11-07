@@ -607,6 +607,14 @@ from the file. Change them with `:set` and the next generated code follows.
 | `<CR>` | Generate with the checked items |
 | `q` / `<Esc>` | Cancel, nothing is inserted |
 
+**Automatic `package` line.** When you open a `.java` file that has no `package` declaration,
+`package …;` and a blank line are added at the top, worked out from the path under the nearest
+`src/`: `src/de/tum/cit/aet/pse/Foo.java` gives `de.tum.cit.aet.pse`, and the Maven/Gradle
+`src/main/java/com/x/Foo.java` gives `com.x`. The rest of the file isn't touched, and this works
+on new and empty files too (without jdtls). It's skipped when the path has no `src/`, when the
+file is directly in `src/` (default package), or when a folder name isn't a valid Java identifier.
+The buffer is then unsaved; `u` undoes the insert.
+
 ### Java snippets
 
 Type the trigger and accept it from the completion menu with `<C-y>` (snippets show a `~` after the

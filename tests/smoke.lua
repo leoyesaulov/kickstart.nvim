@@ -90,6 +90,42 @@ local function run()
     h.fail 'jdtls.ui.pick_many was not replaced by custom.jdtls_picker'
   end
 
+  -- Package inference for Java files under src/ (custom.java_package).
+  local java_package = require 'custom.java_package'
+  for path, want in pairs {
+    ['/r/src/de/tum/cit/aet/pse/Class.java'] = 'de.tum.cit.aet.pse',
+    ['/r/src/main/java/com/x/Foo.java'] = 'com.x',
+    ['/r/src/test/java/com/x/FooTest.java'] = 'com.x',
+    ['/home/src/proj/src/de/x/Foo.java'] = 'de.x',
+    ['/r/src/Foo.java'] = false,
+    ['/r/src/main/java/Foo.java'] = false,
+    ['/r/lib/Foo.java'] = false,
+    ['/r/src/my-mod/Foo.java'] = false,
+  } do
+    local got = java_package.infer(path)
+    if (got or false) ~= want then
+      h.fail(('java_package.infer(%q) = %s, want %s'):format(path, tostring(got), tostring(want)))
+    end
+  end
+  local tmp = vim.fn.tempname()
+  for _, case in ipairs {
+    { tmp .. '/src/de/x/A.java', { 'System.out.println(1);' }, { 'package de.x;', '', 'System.out.println(1);' } },
+    { tmp .. '/src/de/x/B.java', { '' }, { 'package de.x;', '' } },
+    { tmp .. '/src/de/x/C.java', { '', 'class C {}' }, { 'package de.x;', '', 'class C {}' } },
+    { tmp .. '/src/de/x/D.java', { 'package a.b;', '', 'class D {}' }, { 'package a.b;', '', 'class D {}' } },
+    { tmp .. '/lib/E.java', { 'class E {}' }, { 'class E {}' } },
+  } do
+    local buf = vim.api.nvim_create_buf(true, false)
+    vim.api.nvim_buf_set_name(buf, case[1])
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, case[2])
+    java_package.ensure(buf)
+    local got = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    if not vim.deep_equal(got, case[3]) then
+      h.fail(('java_package.ensure on %s gave %s, want %s'):format(vim.fs.basename(case[1]), vim.inspect(got), vim.inspect(case[3])))
+    end
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
+
   -- jdtls indentation follows the buffer (custom.jdtls_indent).
   local jdtls_indent = require 'custom.jdtls_indent'
   local ind_buf = vim.api.nvim_create_buf(true, false)
