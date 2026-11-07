@@ -645,16 +645,19 @@ right after `.`/`::`, so `obj.` only lists the object's methods, fields and post
 | Switch | `sw` arrow switch · `swe` switch expression (`var x = switch …`) |
 | Try | `tryc` catch · `tryf` finally · `trycf` catch+finally · `tryr` try-with-resources |
 | Throw | `thr` any `…Exception` · `thria` IllegalArgument · `thris` IllegalState · `thrus` UnsupportedOperation |
-| Types (name from file) | `cls` class · `intf` interface · `enm` enum · `rec` record |
+| Types (name from file) | `cls` class · `clse` class extends · `clsi` class implements · `clsei` both · `intf` interface · `enm` enum · `rec` record |
 | Constructors | `ctor` no-arg · `ctorp` one param + `this.x = x` |
 | Fields / constants | `prv` private · `prf` private final · `psf` public static final · `prsf` private static final |
 | Accessors | `get` getter · `is` boolean getter · `set` setter · `gs` getter+setter · `fgs` field+getter+setter |
-| Methods | `m` public · `mp` private · `ms` public static |
+| Methods | `m` public · `mp` private · `ms` public static · `ma` public abstract |
 | Collections (impl initials) | `al` ArrayList · `hm` HashMap · `hs` HashSet |
-| Misc | `ov` `@Override` · `test` JUnit 5 `@Test` method · `rnn` `Objects.requireNonNull(x, "x")` · `new` `Object obj = new Object()` · `scan` `Scanner(System.in)` |
+| Misc | `ov` `@Override` · `test` JUnit 5 `@Test` method · `rnn` `Objects.requireNonNull(x, "x")` · `new` `Object obj = new Object()`, or just `new Object()` inside an argument list / after `=`, `return`, `->` · `scan` `Scanner(System.in)` |
 
 In the accessor snippets you type the type and the field name once. The method names are built
 as you type: typing `age` gives `getAge`/`setAge`.
+
+In `clse`/`clsi`/`clsei`, start typing the parent or interface name and pick it from the jdtls
+completion menu (`<c-y>` also adds the import). Then `<leader>ji` stubs the methods you must implement.
 
 **Snippet or `<leader>jg`?** Use the snippet when the field doesn't exist yet: `fgs` writes the
 field and both accessors in one go. Use `<leader>jg` when the fields already exist and you want

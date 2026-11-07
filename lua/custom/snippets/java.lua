@@ -69,8 +69,36 @@ local function params_expr()
   return #parts > 0 and table.concat(parts, ' + ') or '""'
 end
 
-local function snip(trig, desc, body)
-  return s({ trig = trig, desc = desc }, body)
+-- True when the cursor is where an expression goes (`foo(new`, `x = new`, `return new`, `() -> new`)
+-- rather than at the start of a statement. Works on text, since the tree is broken mid-typing.
+local function in_expression(line_to_cursor)
+  local before = line_to_cursor:gsub('[%w_]*$', ''):gsub('%s+$', '')
+  if before == '' then
+    -- Continuation line, e.g. an argument list split over lines: judge by the previous line.
+    local prev = vim.fn.prevnonblank(vim.api.nvim_win_get_cursor(0)[1] - 1)
+    if prev == 0 then
+      return false
+    end
+    before = vim.fn.getline(prev):gsub('%s+$', '')
+  end
+  for _, kw in ipairs { 'return', 'throw', 'yield' } do
+    if before:match('%f[%w_]' .. kw .. '$') then
+      return true
+    end
+  end
+  if before:match '^%s*case%f[^%w_].*:$' or before:match '^%s*default%s*:$' then
+    return false
+  end
+  return before:match '[(,=%[?:+%-*/%%&|!<>^~]$' ~= nil
+end
+
+local function not_expression(line_to_cursor)
+  return not in_expression(line_to_cursor)
+end
+
+-- `cond` (optional) decides both whether the snippet expands and whether blink lists it.
+local function snip(trig, desc, body, cond)
+  return s({ trig = trig, desc = desc, condition = cond, show_condition = cond }, body)
 end
 
 local getter = 'public <> get<>() {\n\treturn <>;\n}'
@@ -122,6 +150,15 @@ return {
 
   -- Types (name from the file name)
   snip('cls', 'public class', fmta('public class <> {\n\t<>\n}', { f(classname), i(0) })),
+  -- Type the parent/interface name and pick it from jdtls's completions (<c-y> adds the import);
+  -- then <leader>ji stubs the abstract methods.
+  snip('clse', 'public class extends', fmta('public class <> extends <> {\n\t<>\n}', { f(classname), i(1, 'Parent'), i(0) })),
+  snip('clsi', 'public class implements', fmta('public class <> implements <> {\n\t<>\n}', { f(classname), i(1, 'Interface'), i(0) })),
+  snip(
+    'clsei',
+    'public class extends + implements',
+    fmta('public class <> extends <> implements <> {\n\t<>\n}', { f(classname), i(1, 'Parent'), i(2, 'Interface'), i(0) })
+  ),
   snip('intf', 'public interface', fmta('public interface <> {\n\t<>\n}', { f(classname), i(0) })),
   snip('enm', 'public enum', fmta('public enum <> {\n\t<>\n}', { f(classname), i(0) })),
   snip('rec', 'public record', fmta('public record <>(<>) {\n\t<>\n}', { f(classname), i(1), i(0) })),
@@ -155,6 +192,7 @@ return {
   snip('m', 'public method', fmta('public <> <>(<>) {\n\t<>\n}', { i(1, 'void'), i(2, 'name'), i(3), i(0) })),
   snip('mp', 'private method', fmta('private <> <>(<>) {\n\t<>\n}', { i(1, 'void'), i(2, 'name'), i(3), i(0) })),
   snip('ms', 'public static method', fmta('public static <> <>(<>) {\n\t<>\n}', { i(1, 'void'), i(2, 'name'), i(3), i(0) })),
+  snip('ma', 'public abstract method', fmta('public abstract <> <>(<>);', { i(1, 'void'), i(2, 'name'), i(3) })),
 
   -- Collections: implementation initials
   snip('al', 'List = new ArrayList', { t 'List<', i(1, 'String'), t '> ', i(2, 'list'), t ' = new ArrayList<>();' }),
@@ -165,6 +203,9 @@ return {
   snip('ov', '@Override', t '@Override'),
   snip('test', 'JUnit 5 test method', fmta('@Test\nvoid <>() {\n\t<>\n}', { i(1, 'name'), i(0) })),
   snip('rnn', 'Objects.requireNonNull', fmta('Objects.requireNonNull(<>, "<>");', { i(1, 'x'), rep(1) })),
-  snip('new', 'new object', fmta('<> <> = new <>(<>);', { i(1, 'Object'), i(2, 'obj'), rep(1), i(3) })),
+  -- Statement position declares a variable; inside an argument list / after `=`, `return`, `->`
+  -- only the bare `new Type(...)` expression is inserted.
+  snip('new', 'new object', fmta('<> <> = new <>(<>);', { i(1, 'Object'), i(2, 'obj'), rep(1), i(3) }), not_expression),
+  snip('new', 'new object (expression)', fmta('new <>(<>)', { i(1, 'Object'), i(2) }), in_expression),
   snip('scan', 'Scanner on System.in', t 'Scanner sc = new Scanner(System.in);'),
 }

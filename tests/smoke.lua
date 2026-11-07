@@ -218,6 +218,51 @@ local function run()
   end
   vim.api.nvim_buf_delete(ind_buf, { force = true })
 
+  -- `new` snippet: declaration at statement start, bare expression inside arguments etc.
+  local new_decl, new_expr
+  for _, sn in ipairs(dofile((vim.env.KICKSTART_REPO or vim.fn.getcwd()) .. '/lua/custom/snippets/java.lua')) do
+    if sn.trigger == 'new' then
+      if table.concat(sn.dscr or {}):find 'expression' then
+        new_expr = sn
+      else
+        new_decl = sn
+      end
+    end
+  end
+  local snip_buf = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_current_buf(snip_buf)
+  local function new_kind(lines)
+    vim.api.nvim_buf_set_lines(snip_buf, 0, -1, false, lines)
+    vim.api.nvim_win_set_cursor(0, { #lines, #lines[#lines] })
+    local prefix = lines[#lines]
+    local d, e = new_decl.show_condition(prefix), new_expr.show_condition(prefix)
+    return d ~= e and (e and 'expression' or 'statement') or ('both=' .. tostring(d))
+  end
+  if not (new_decl and new_expr) then
+    h.fail 'java snippets: expected two `new` snippets (declaration + expression)'
+  else
+    for _, case in ipairs {
+      { { 'foo(ne' }, 'expression' },
+      { { 'foo(a, ne' }, 'expression' },
+      { { 'x = ne' }, 'expression' },
+      { { 'return ne' }, 'expression' },
+      { { 'run(() -> ne' }, 'expression' },
+      { { 'var y = cond ? ne' }, 'expression' },
+      { { 'method(', '    ne' }, 'expression' },
+      { { 'ne' }, 'statement' },
+      { { 'int a = 1;', '    ne' }, 'statement' },
+      { { 'if (x) ne' }, 'statement' },
+      { { 'case A: ne' }, 'statement' },
+      { { 'void f() {', '    ne' }, 'statement' },
+    } do
+      local got = new_kind(case[1])
+      if got ~= case[2] then
+        h.fail(('java `new` snippet after %s: %s, want %s'):format(vim.inspect(case[1]), got, case[2]))
+      end
+    end
+  end
+  vim.api.nvim_buf_delete(snip_buf, { force = true })
+
   -- Everything still lazy (cmd/keys-triggered: trouble, lazygit, toggleterm, ...) gets its
   -- config run now, so a broken config can't hide behind a trigger nobody exercised.
   local pending = {}
