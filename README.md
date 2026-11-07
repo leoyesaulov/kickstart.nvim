@@ -160,7 +160,8 @@ touch your real `~/.config/nvim` or `~/.local/share/nvim`. The first run install
 `lazy-lock.json`'s commits and compiles treesitter parsers (`make deps`); later runs reuse them.
 Mason installs are switched off during tests. Linters that aren't installed locally are skipped
 with a warning (`brew install stylua shellcheck` / `pacman -S stylua shellcheck`). CI
-(`.github/workflows/tests.yml`) runs them all on latest Arch Linux and latest macOS.
+(`.github/workflows/tests.yml`) runs every linter in its `lint` job (stylua included; there's no
+separate formatting workflow), and the nvim tests on latest Arch Linux and latest macOS.
 
 ### FAQ
 
