@@ -43,7 +43,7 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 22. [Java](#java)
 23. [C / C++](#c--c)
 24. [Web Dev](#web-dev)
-25. [Docker](#docker)
+25. [DevOps (Docker, Compose, nginx, CI YAML)](#devops-docker-compose-nginx-ci-yaml)
 26. [Shell](#shell)
 27. [LaTeX](#latex)
 28. [Misc Commands](#misc-commands)
@@ -238,7 +238,8 @@ comments (the colon matters). It ships no keymaps; these commands list them:
 
 Triggered on `LspAttach`, buffer-local. Configured servers: `gopls`, `pyright`, `ruff`, `clangd`,
 `lua_ls`, `ts_ls`, `html`, `cssls`, `tailwindcss`, `jsonls`, `eslint`, `emmet_language_server`,
-`dockerls`, `docker_compose_language_service`, `bashls`, `texlab`, `marksman` (markdown). **Java (`jdtls`) is not in
+`dockerls`, `docker_compose_language_service`, `yamlls`, `nginx_language_server`, `bashls`, `texlab`,
+`marksman` (markdown). **Java (`jdtls`) is not in
 this list** — it's started separately with its own lifecycle, see [Java](#java).
 
 | Key | Mode | Action |
@@ -266,7 +267,8 @@ this list** — it's started separately with its own lifecycle, see [Java](#java
 
 Formatters by filetype: `lua` → stylua, `sh` → shfmt, `javascript`/`typescript`/
 `javascriptreact`/`typescriptreact`/`html`/`css`/`scss`/`json`/`yaml` → prettierd (falls back to
-prettier). **Python has no separate formatter here** — ruff's LSP server handles
+prettier). Compose files and GitHub workflows (`yaml.docker-compose`, `yaml.github`) use the
+`yaml` formatter too. **Python has no separate formatter here** — ruff's LSP server handles
 formatting + import-sorting directly (see [Python](#python)). **C/C++ has no separate formatter
 either** — clangd's own `textDocument/formatting` covers it via LSP fallback.
 
@@ -278,6 +280,7 @@ either** — clangd's own `textDocument/formatting` covers it via LSP fallback.
 |---|---|
 | `dockerfile` | hadolint |
 | `sh`, `bash` | shellcheck |
+| `yaml.github` (`.github/workflows/*.yml`) | actionlint (also shellchecks `run:` scripts) |
 
 ## Completion (blink.cmp)
 
@@ -694,10 +697,26 @@ LSP servers: `ts_ls` (JS/TS/React), `html`, `cssls`, `tailwindcss`, `jsonls`, `e
 for js/ts/jsx/tsx/html/css/scss/json/yaml (see [Formatting](#formatting)). ESLint's code actions
 (`gra`) cover quick-fixes like unused imports.
 
-## Docker
+## DevOps (Docker, Compose, nginx, CI YAML)
 
-`dockerls` for `Dockerfile`, `docker_compose_language_service` for `docker-compose.yml`. hadolint
-lints Dockerfiles (see [Linting](#linting)).
+| File | Filetype | LSP | Lint |
+|---|---|---|---|
+| `Dockerfile`, `Containerfile`, `*.Dockerfile` | `dockerfile` | `dockerls` | hadolint |
+| `compose.yaml`, `docker-compose.yml`, `docker-compose.*.yml`, `compose.*.yaml` | `yaml.docker-compose` | `docker_compose_language_service` + `yamlls` | — |
+| `.github/workflows/*.yml` | `yaml.github` | `yamlls` | actionlint |
+| other `*.yml` / `*.yaml` | `yaml` | `yamlls` | — |
+| `nginx.conf`, `/etc/nginx/**`, `*/nginx/*.conf`, `*.nginx`, `*/nginx/sites-*/*`, `*/nginx/**/*.conf.template` | `nginx` | `nginx_language_server` | — |
+
+- The compose/workflow/extra nginx patterns are defined in `lua/custom/filetypes.lua`. Neovim
+  detects compose files as plain `yaml` on its own, which keeps the compose LSP from starting.
+- `yamlls` and `jsonls` get schemas from SchemaStore.nvim's catalog: completion, hover docs and
+  validation for compose, GitHub Actions, GitLab CI, `package.json`, `tsconfig.json`, etc., picked
+  by filename. Hover (`K`) on a key shows its schema docs.
+- `:checkhealth vim.lsp` shows which servers attached to the current buffer.
+- `nginx_language_server` is installed by `install.sh` with `uv tool install --python 3.13`, not
+  Mason (its Mason package needs Python <3.14). Without it, nginx files still get highlighting
+  but no LSP.
+- YAML (compose and workflows included) formats with prettierd on save. nginx has no formatter.
 
 ## Shell
 

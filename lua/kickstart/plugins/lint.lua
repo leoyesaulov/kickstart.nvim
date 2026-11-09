@@ -9,6 +9,7 @@ return {
         dockerfile = { 'hadolint' },
         sh = { 'shellcheck' },
         bash = { 'shellcheck' },
+        ['yaml.github'] = { 'actionlint' }, -- .github/workflows/*.yml (lua/custom/filetypes.lua)
       }
 
       -- To allow other plugins to add linters to require('lint').linters_by_ft,

@@ -251,6 +251,9 @@ local function after_member_access(ctx)
   return before:match '[.:]$' or before:match '%->$'
 end
 
+-- Extra filetype detection (compose, GitHub workflows, nginx) for the DevOps LSPs/linters.
+require 'custom.filetypes'
+
 -- blink.cmp: rank items you accept often in this project higher (Java/Python only).
 local completion_usage = require 'custom.completion_usage'
 completion_usage.setup()
@@ -502,6 +505,9 @@ require('lazy').setup({
       'mason-org/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
+      -- JSON/YAML schema catalog for jsonls/yamlls (compose, GitHub Actions, package.json, ...).
+      'b0o/SchemaStore.nvim',
+
       -- Useful status updates for LSP.
       { 'j-hui/fidget.nvim', opts = {} },
 
@@ -694,11 +700,40 @@ require('lazy').setup({
         html = {},
         cssls = {},
         tailwindcss = {},
-        jsonls = {},
+        jsonls = {
+          settings = {
+            json = {
+              schemas = require('schemastore').json.schemas(),
+              validate = { enable = true },
+            },
+          },
+        },
         eslint = {},
         emmet_language_server = {},
         dockerls = {},
-        docker_compose_language_service = {},
+        docker_compose_language_service = {}, -- runs on `yaml.docker-compose` (lua/custom/filetypes.lua)
+        yamlls = {
+          -- lspconfig's defaults plus `yaml.github` (GitHub workflows, see lua/custom/filetypes.lua)
+          filetypes = { 'yaml', 'yaml.docker-compose', 'yaml.github', 'yaml.gitlab', 'yaml.helm-values' },
+          settings = {
+            yaml = {
+              -- Use SchemaStore.nvim's bundled catalog instead of yamlls's own downloader.
+              schemaStore = { enable = false, url = '' },
+              schemas = require('schemastore').yaml.schemas(),
+              validate = true,
+              keyOrdering = false,
+            },
+          },
+        },
+        -- Not from Mason: its nginx-language-server package needs Python <3.14, which current
+        -- Arch/Homebrew no longer ship. install.sh installs it with `uv tool install --python 3.13`
+        -- instead, into uv's bin dir (~/.local/bin), which isn't always on PATH.
+        nginx_language_server = {
+          cmd = {
+            vim.fn.executable 'nginx-language-server' == 1 and 'nginx-language-server'
+              or vim.fs.joinpath(vim.env.XDG_BIN_HOME or vim.fn.expand '~/.local/bin', 'nginx-language-server'),
+          },
+        },
         bashls = {},
         texlab = {},
         marksman = {}, -- Markdown: document symbols (`gO`), heading/link navigation (`gd`)
@@ -736,7 +771,10 @@ require('lazy').setup({
       --
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
-      local ensure_installed = vim.tbl_keys(servers or {})
+      local not_from_mason = { nginx_language_server = true } -- installed by install.sh, see `servers`
+      local ensure_installed = vim.tbl_filter(function(name)
+        return not not_from_mason[name]
+      end, vim.tbl_keys(servers or {}))
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
         'jdtls', -- Java LSP (started manually from lua/custom/plugins/java.lua)
@@ -747,6 +785,7 @@ require('lazy').setup({
         'prettierd', -- Web formatter (faster daemon, preferred)
         'hadolint', -- Dockerfile linter (see lua/kickstart/plugins/lint.lua)
         'shellcheck', -- Shell linter (see lua/kickstart/plugins/lint.lua)
+        'actionlint', -- GitHub Actions workflow linter (see lua/kickstart/plugins/lint.lua)
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -765,6 +804,9 @@ require('lazy').setup({
         -- second, bundle-less jdtls client to every Java buffer.
         automatic_enable = { exclude = { 'jdtls' } },
       }
+      -- mason-lspconfig only enables Mason-installed servers. A missing binary is skipped quietly
+      -- (logged to :LspLog), so this is safe on machines without install.sh's uv tools.
+      vim.lsp.enable(vim.tbl_keys(not_from_mason))
     end,
   },
 
@@ -1046,6 +1088,7 @@ require('lazy').setup({
         'luadoc',
         'markdown',
         'markdown_inline',
+        'nginx',
         'python',
         'query',
         'scss',

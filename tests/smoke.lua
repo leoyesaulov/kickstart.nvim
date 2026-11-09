@@ -263,6 +263,42 @@ local function run()
   end
   vim.api.nvim_buf_delete(snip_buf, { force = true })
 
+  -- DevOps filetype detection (custom.filetypes) and the LSP/lint setup that depends on it.
+  for path, want in pairs {
+    ['/r/compose.yaml'] = 'yaml.docker-compose',
+    ['/r/docker-compose.yml'] = 'yaml.docker-compose',
+    ['/r/docker-compose.override.yml'] = 'yaml.docker-compose',
+    ['/r/compose.prod.yaml'] = 'yaml.docker-compose',
+    ['/r/.github/workflows/ci.yml'] = 'yaml.github',
+    ['/r/site.nginx'] = 'nginx',
+    ['/r/nginx/templates/default.conf.template'] = 'nginx',
+    ['/r/nginx/sites-enabled/app'] = 'nginx',
+    ['/etc/apache2/sites-available/app.conf'] = 'apache',
+    ['/r/config.yaml'] = 'yaml',
+    ['/r/mycompose.yaml'] = 'yaml',
+  } do
+    local got = vim.filetype.match { filename = path }
+    if got ~= want then
+      h.fail(('filetype of %s is %s, want %s'):format(path, tostring(got), want))
+    end
+  end
+  local yamlls = vim.lsp.config.yamlls or {}
+  if not vim.tbl_contains(yamlls.filetypes or {}, 'yaml.github') then
+    h.fail(('yamlls filetypes %s lack yaml.github'):format(vim.inspect(yamlls.filetypes)))
+  end
+  if next(vim.tbl_get(yamlls, 'settings', 'yaml', 'schemas') or {}) == nil then
+    h.fail 'yamlls has no SchemaStore schemas'
+  end
+  if #(vim.tbl_get(vim.lsp.config.jsonls or {}, 'settings', 'json', 'schemas') or {}) == 0 then
+    h.fail 'jsonls has no SchemaStore schemas'
+  end
+  if not vim.lsp.is_enabled 'nginx_language_server' then
+    h.fail 'nginx_language_server is not enabled (it is not Mason-installed, so init.lua must enable it)'
+  end
+  if not vim.deep_equal(require('lint').linters_by_ft['yaml.github'], { 'actionlint' }) then
+    h.fail 'nvim-lint does not run actionlint on yaml.github'
+  end
+
   -- Everything still lazy (cmd/keys-triggered: trouble, lazygit, toggleterm, ...) gets its
   -- config run now, so a broken config can't hide behind a trigger nobody exercised.
   local pending = {}

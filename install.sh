@@ -172,6 +172,22 @@ ensure_molten_venv() {
   echo "OK      Jupyter/molten venv ready ($venv)"
 }
 
+ensure_nginx_language_server() {
+  # Mason's nginx-language-server package needs Python <3.14, older than current Arch/Homebrew
+  # python. uv fetches its own 3.13; init.lua finds the binary in uv's bin dir (~/.local/bin).
+  ensure_pkg uv uv uv "installs nginx-language-server with its own Python"
+  if ! command -v uv >/dev/null 2>&1; then
+    echo "WARNING uv not found — skipping nginx-language-server." >&2
+    return
+  fi
+  if uv tool list 2>/dev/null | grep -q '^nginx-language-server '; then
+    echo "OK      nginx-language-server already installed (uv tool)"
+  else
+    echo "Installing nginx-language-server via uv (nginx LSP, Python 3.13)..."
+    uv tool install --python 3.13 nginx-language-server
+  fi
+}
+
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/${NVIM_APPNAME:-nvim}"
 
@@ -191,6 +207,7 @@ ensure_tex_distribution
 ensure_pdf_viewer
 ensure_pkg magick imagemagick imagemagick "image.nvim renders notebook plots inline"
 ensure_molten_venv
+ensure_nginx_language_server
 
 if [[ "$repo_dir" == "$config_dir" ]]; then
   echo "Repo is already checked out at $config_dir — nothing to link."

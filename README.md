@@ -41,6 +41,8 @@ Neovim itself — so a fresh system only needs `git` plus `pacman` or `brew`):
   - TypeScript/JS/HTML/CSS/Tailwind, Python (pyright), Bash, Docker, prettier:
     `npm` — Mason installs all of these through it
   - Golang: `go` — Mason installs `gopls` and `delve` through it
+  - nginx: `uv tool install --python 3.13 nginx-language-server` (`install.sh` does this on
+    Arch/macOS). Not via Mason: that package needs Python <3.14
   - Java: a JDK on `PATH`/`JAVA_HOME` (`install.sh`'s `ensure_jdk` handles this on Arch/macOS).
     On macOS, `/usr/bin/java` is only a stub — `brew install openjdk` and link it with
     `sudo ln -sfn "$(brew --prefix)/opt/openjdk/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk.jdk`;
