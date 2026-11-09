@@ -263,6 +263,157 @@ local function run()
   end
   vim.api.nvim_buf_delete(snip_buf, { force = true })
 
+  -- Generated declaration snippets (kind + access + mods): unique triggers, right bodies.
+  local by_trig = {}
+  for _, sn in ipairs(dofile((vim.env.KICKSTART_REPO or vim.fn.getcwd()) .. '/lua/custom/snippets/java.lua')) do
+    if by_trig[sn.trigger] and sn.trigger ~= 'new' then
+      h.fail('java snippets: duplicate trigger ' .. sn.trigger)
+    end
+    by_trig[sn.trigger] = sn
+  end
+  for trig, want in pairs {
+    mta = '^protected abstract void name%(.*%);$',
+    mps = '^private static void name%(',
+    fp = '^private Type name;$',
+    ftsf = '^protected static final Type NAME = .*;$',
+    clsaei = '^public abstract class .* extends Parent implements Interface {',
+  } do
+    local sn = by_trig[trig]
+    local body = sn and table.concat(sn:get_docstring(), '\n'):gsub('%$%{%d+:([^}]*)%}', '%1'):gsub('%$%d+', '')
+    if not body then
+      h.fail('java snippets: missing generated trigger ' .. trig)
+    elseif not body:match(want) then
+      h.fail(('java snippet %s expands to %q, want %s'):format(trig, body, want))
+    end
+  end
+  for _, trig in ipairs { 'mpa', 'prv', 'psf' } do
+    if by_trig[trig] then
+      h.fail('java snippets: unexpected trigger ' .. trig)
+    end
+  end
+
+  -- fin / fina: initialise the constructor's remaining fields (`new` or a default value).
+  local fin_buf = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_current_buf(fin_buf)
+  vim.cmd 'noautocmd setlocal filetype=java'
+  local fin_class = {
+    'class Foo {',
+    '    private static int COUNT;',
+    '    private final List<String> items;',
+    '    private Map<String, Integer> counts;',
+    '    private int n;',
+    '    private boolean done;',
+    '    private String label;',
+    '    private int[] data;',
+    '    private int x;',
+    '    private int y = 3;',
+    '    private Repo repo;',
+    '    public Foo(int x) {',
+    '        this.x = x;',
+    '        this.label = "a";',
+    '        TRIGGER',
+    '    }',
+    '    void m() {',
+    '        TRIGGER',
+    '    }',
+    '}',
+  }
+  local function fin_setup(trigger, line)
+    local lines = vim.deepcopy(fin_class)
+    lines[15] = lines[15]:gsub('TRIGGER', trigger)
+    lines[18] = lines[18]:gsub('TRIGGER', trigger)
+    vim.api.nvim_buf_set_lines(fin_buf, 0, -1, false, lines)
+    vim.api.nvim_win_set_cursor(0, { line, #lines[line] })
+    return lines[line]
+  end
+  for _, case in ipairs {
+    { 'fin', 15, true },
+    { 'fina', 15, true },
+    { 'fin', 18, false }, -- in a method, not a constructor
+    { 'foo(fin', 15, false }, -- expression position
+  } do
+    local trig = case[1]:match '%w+$'
+    if not by_trig[trig] then
+      h.fail('java snippets: missing trigger ' .. trig)
+    elseif by_trig[trig].show_condition(fin_setup(case[1], case[2])) ~= case[3] then
+      h.fail(('java %s snippet listed=%s on %q, want %s'):format(trig, not case[3], case[1], case[3]))
+    end
+  end
+  local function fin_expand(trig)
+    fin_setup('', 15)
+    require('luasnip').snip_expand(by_trig[trig], { pos = { 14, 8 } })
+    require('luasnip').unlink_current()
+    return vim.api.nvim_buf_get_lines(fin_buf, 14, -1, false)
+  end
+  local got = fin_expand 'fina'
+  local want = {
+    '        this.items = new ArrayList<>();',
+    '        this.counts = new HashMap<>();',
+    '        this.n = 0;',
+    '        this.done = false;',
+    '        this.data = new int[0];',
+    '        this.repo = new Repo();',
+    '    }',
+  }
+  if not vim.deep_equal(vim.list_slice(got, 1, #want), want) then
+    h.fail(('java fina expanded to %s, want %s'):format(vim.inspect(got), vim.inspect(want)))
+  end
+  got = fin_expand('fin')[1]
+  if got ~= '        this.items = new ArrayList<>();' then
+    h.fail(('java fin expanded to %q'):format(got))
+  end
+  -- Nothing left to initialise once fina has run: neither snippet is listed.
+  fin_setup('', 15)
+  vim.api.nvim_buf_set_lines(fin_buf, 14, 15, false, vim.list_extend(vim.list_slice(want, 1, 6), { '        fin' }))
+  vim.api.nvim_win_set_cursor(0, { 21, 11 })
+  if by_trig.fin.show_condition '        fin' then
+    h.fail 'java fin snippet listed although every field is initialised'
+  end
+  vim.api.nvim_buf_delete(fin_buf, { force = true })
+
+  -- /* */ block comments for gc / gcc in Java (custom.block_comment). noautocmd keeps jdtls from
+  -- trying to attach to the scratch buffer; the maps are attached by hand instead.
+  local bc_buf = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_current_buf(bc_buf)
+  vim.cmd 'noautocmd setlocal filetype=java'
+  require('custom.block_comment').attach(bc_buf)
+  local function comment_case(name, lines, cursor, keys, want)
+    vim.api.nvim_buf_set_lines(bc_buf, 0, -1, false, lines)
+    vim.bo[bc_buf].undolevels = vim.bo[bc_buf].undolevels -- undo break, so `u` stops here
+    vim.api.nvim_win_set_cursor(0, { cursor, 0 })
+    vim.cmd('normal ' .. keys)
+    local got = vim.api.nvim_buf_get_lines(bc_buf, 0, -1, false)
+    if not vim.deep_equal(got, want) then
+      h.fail(('block_comment %s: `%s` gave %s, want %s'):format(name, keys, vim.inspect(got), vim.inspect(want)))
+    end
+  end
+  local code = { 'class A {', '    int a = 1;', '', '    int b = 2;', '}' }
+  local wrapped = { 'class A {', '    /*', '    int a = 1;', '', '    int b = 2;', '    */', '}' }
+  comment_case('wrap', code, 2, 'Vjjgc', wrapped)
+  comment_case('wrap via motion', code, 2, 'gc2j', wrapped)
+  comment_case('unwrap with gcc', wrapped, 4, 'gcc', code)
+  comment_case('unwrap with gcgc', wrapped, 3, 'gcgc', code)
+  comment_case('unwrap from the */ line', wrapped, 6, 'gcc', code)
+  comment_case('dgc deletes the block', wrapped, 3, 'dgc', { 'class A {', '}' })
+  comment_case('single line uses //', code, 2, 'gcc', { 'class A {', '    // int a = 1;', '', '    int b = 2;', '}' })
+  comment_case('3gcc wraps', code, 2, '3gcc', wrapped)
+  comment_case('// lines uncomment', { '    // int a = 1;', '    // int b = 2;' }, 1, 'Vjgc', { '    int a = 1;', '    int b = 2;' })
+  comment_case('inline delimiters', { '    /* int a = 1;', '    int b = 2; */' }, 1, 'gcc', { '    int a = 1;', '    int b = 2;' })
+  comment_case('one-line block', { '    /* int a = 1; */' }, 1, 'gcc', { '    int a = 1;' })
+  comment_case(
+    'decorated block',
+    { '    /*', '     * int a = 1;', '     *', '     * int b = 2;', '     */' },
+    2,
+    'gcc',
+    { '    int a = 1;', '', '    int b = 2;' }
+  )
+  comment_case('javadoc is left to the built-in', { '    /** Doc. */' }, 1, 'gcc', { '    // /** Doc. */' })
+  comment_case('trailing comment is left to the built-in', { '    f(); /* x */' }, 1, 'gcc', { '    // f(); /* x */' })
+  comment_case('range containing */ falls back to //', { 'f(); /* x */', 'g();' }, 1, 'Vjgc', { '// f(); /* x */', '// g();' })
+  comment_case('one undo step', code, 2, 'Vjjgcu', code)
+  comment_case('dot repeats a wrap', { 'a();', 'b();', '', 'c();', 'd();' }, 1, 'Vjgc5j.', { '/*', 'a();', 'b();', '*/', '', '/*', 'c();', 'd();', '*/' })
+  vim.api.nvim_buf_delete(bc_buf, { force = true })
+
   -- DevOps filetype detection (custom.filetypes) and the LSP/lint setup that depends on it.
   for path, want in pairs {
     ['/r/compose.yaml'] = 'yaml.docker-compose',

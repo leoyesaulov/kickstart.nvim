@@ -12,13 +12,15 @@ return {
   'mfussenegger/nvim-jdtls',
   ft = 'java',
   -- Runs at startup (before the ft lazy-load), so even the first Java buffer gets its missing
-  -- `package …;` line inferred from its path under src/: lua/custom/java_package.lua.
+  -- `package …;` line inferred from its path under src/ (lua/custom/java_package.lua) and the
+  -- /* */-aware gc / gcc maps (lua/custom/block_comment.lua).
   init = function()
     vim.api.nvim_create_autocmd('FileType', {
       group = vim.api.nvim_create_augroup('custom-java-package', { clear = true }),
       pattern = 'java',
       callback = function(ev)
         require('custom.java_package').ensure(ev.buf)
+        require('custom.block_comment').attach(ev.buf)
       end,
     })
   end,

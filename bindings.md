@@ -105,9 +105,9 @@ table is currently `Disabled`.
 | `<F5>` | — | Debug: start/continue | debug.lua:29-34 | Active |
 | `<F7>` | — | Debug: toggle UI / see last session result | debug.lua:71-77 | Active |
 | `ci'` | Normal (mini.ai default) | Change inside `'` quote | mini.ai default | Active |
-| `gc` | Normal, Visual | Toggle comment over a motion (`gcap`) / on the selected lines | Neovim built-in | Active |
-| `gc` | Operator | Comment-block text object (`dgc` deletes the block) | Neovim built-in | Active |
-| `gcc` | Normal | Toggle comment on the current line (`3gcc` for 3 lines) | Neovim built-in | Active |
+| `gc` | Normal, Visual | Toggle comment over a motion (`gcap`) / on the selected lines. Java: several lines get wrapped in `/*` `*/`; on a `/* */` block, uncomments it | Neovim built-in; Java: custom/block_comment.lua | Active |
+| `gc` | Operator | Comment-block text object (`dgc` deletes the block). Java: also selects a `/* */` block | Neovim built-in; Java: custom/block_comment.lua | Active |
+| `gcc` | Normal | Toggle comment on the current line (`3gcc` for 3 lines). Java: inside a `/* */` block, uncomments the whole block; `3gcc` wraps in `/* */` | Neovim built-in; Java: custom/block_comment.lua | Active |
 | `gO` | Normal | Open document symbols (only if the LSP supports it; else Neovim's built-in outline, e.g. markdown headings) | init.lua:573-575 | Active |
 | `gW` | Normal | Open workspace symbols | init.lua:579 | Active |
 | `gra` | Normal, Visual | LSP code action | init.lua:549 | Active |

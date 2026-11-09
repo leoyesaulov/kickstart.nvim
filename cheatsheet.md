@@ -97,6 +97,17 @@ fence in markdown or a notebook.
 | `gc` | Operator-pending | Text object for the comment block around the cursor: `dgc` deletes it, `gcgc` uncomments it |
 | `.` | Normal | Repeat the last comment toggle on another line |
 
+**Java** (`lua/custom/block_comment.lua`) also understands `/* */` block comments:
+
+- Commenting **several** lines (`Vjjgc`, `gcap`, `3gcc`) wraps them in `/*` and `*/`, each on its
+  own line at the block's indent. A single line still gets `//`, and lines that are all `//`
+  comments are still uncommented by removing the `//`.
+- `gcc`, `gc{motion}` or Visual `gc` that touches a `/* */` block removes its delimiters. That
+  covers own-line `/*` and `*/`, inline `/* foo … bar */`, and the ` * ` decorated style.
+  `gcgc` does the same and `dgc` deletes the block.
+- Javadoc (`/** … */`) and trailing comments (`f(); /* x */`) are left alone and get the
+  normal `//` toggle.
+
 ### Editing
 
 | Key | Action |
@@ -633,11 +644,24 @@ Its postfix templates (`list.for`, `x.nnull`, `x.var`) still show after `.`. Sni
 right after `.`/`::`, so `obj.` only lists the object's methods, fields and postfix templates.
 
 **How the names work:**
-1. Well-known IntelliJ abbreviations stay as they are: `sout`, `souf`, `soutv`, `psvm`, `fori`, `psf`.
+1. Well-known IntelliJ abbreviations stay as they are: `sout`, `souf`, `soutv`, `psvm`, `fori`.
 2. Everything else is a **family prefix + variant letter**: `try` → `tryc`/`tryf`/`tryr`,
    `if` → `ife`/`ifn`/`ifnn`, `thr` → `thria`/`thris`/`thrus`.
 3. A suffix letter means the same thing in every family: `f` = format/finally,
    `r` = reverse/resources, `e` = else/enhanced, `n` = null, `nn` = not null.
+4. Methods, fields and classes have their own grammar, **kind + access + modifiers**. Every
+   valid combination exists, so you build the trigger instead of memorizing it:
+
+   | Part | Letters |
+   |---|---|
+   | Kind | `m` method · `f` field · `cls` class |
+   | Access | none = public · `p` private · `t` protected (classes are always public) |
+   | Modifiers, in Java order | `a` abstract · `s` static · `f` final. For classes, add `e` extends · `i` implements · `ei` both |
+
+   Examples: `m` public method, `mt` protected method, `mts` protected static method, `mta` protected
+   abstract method (just `;`, no body), `fpf` private final field, `ftsf` protected static final constant
+   (`NAME = …`), `clsa` abstract class, `clsae` abstract class extends, `clsfi` final class implements.
+   Private abstract (`mpa`) doesn't exist, since nothing could override it.
 
 | Family | Triggers |
 |---|---|
@@ -648,24 +672,38 @@ right after `.`/`::`, so `obj.` only lists the object's methods, fields and post
 | Switch | `sw` arrow switch · `swe` switch expression (`var x = switch …`) |
 | Try | `tryc` catch · `tryf` finally · `trycf` catch+finally · `tryr` try-with-resources |
 | Throw | `thr` any `…Exception` · `thria` IllegalArgument · `thris` IllegalState · `thrus` UnsupportedOperation |
-| Types (name from file) | `cls` class · `clse` class extends · `clsi` class implements · `clsei` both · `intf` interface · `enm` enum · `rec` record |
-| Constructors | `ctor` no-arg · `ctorp` one param + `this.x = x` |
-| Fields / constants | `prv` private · `prf` private final · `psf` public static final · `prsf` private static final |
+| Declarations (rule 4) | `m…` methods · `f…` fields · `cls…` classes (name from file) |
+| Types (name from file) | `intf` interface · `enm` enum · `rec` record |
+| Constructors | `ctor` no-arg · `ctorp` one param + `this.x = x` · `fin` init one field (`this.items = new ArrayList<>();`, `this.n = 0;`) · `fina` init all remaining fields |
 | Accessors | `get` getter · `is` boolean getter · `set` setter · `gs` getter+setter · `fgs` field+getter+setter |
-| Methods | `m` public · `mp` private · `ms` public static · `ma` public abstract |
 | Collections (impl initials) | `al` ArrayList · `hm` HashMap · `hs` HashSet |
 | Misc | `ov` `@Override` · `test` JUnit 5 `@Test` method · `rnn` `Objects.requireNonNull(x, "x")` · `new` `Object obj = new Object()`, or just `new Object()` inside an argument list / after `=`, `return`, `->` · `scan` `Scanner(System.in)` |
 
 In the accessor snippets you type the type and the field name once. The method names are built
 as you type: typing `age` gives `getAge`/`setAge`.
 
-In `clse`/`clsi`/`clsei`, start typing the parent or interface name and pick it from the jdtls
+In any `cls…e`/`cls…i`/`cls…ei` snippet, start typing the parent or interface name and pick it from the jdtls
 completion menu (`<c-y>` also adds the import). Then `<leader>ji` stubs the methods you must implement.
 
 **Snippet or `<leader>jg`?** Use the snippet when the field doesn't exist yet: `fgs` writes the
 field and both accessors in one go. Use `<leader>jg` when the fields already exist and you want
 a constructor or accessors for several of them. It shows a picker of the real fields and needs
 jdtls to be attached.
+
+**Initialising fields in a constructor.** `<leader>jg`'s constructor only assigns the fields
+you take as parameters. For the rest, type `fin` or `fina` inside the constructor body. They're
+only listed there, and only while some field is still uninitialised: not static, no `= …` in
+its declaration, not a constructor parameter, and not assigned in the constructor yet.
+- `fin` fills in the first such field: `this.items = new ArrayList<>();`. To pick another field,
+  type over the name and press `<Tab>`. The right-hand side is rebuilt from that field's type.
+- `fina` writes one line per field. `<Tab>` steps through each type or value.
+- Interfaces get a common implementation: `List`/`Collection` → `ArrayList`, `Set` → `HashSet`,
+  `Map` → `HashMap`, `Queue`/`Deque` → `ArrayDeque`, `Sorted…`/`Navigable…` → `Tree…`. Generic
+  types use `<>`. Any other class is used as written, and you can type over it to swap in an
+  implementation. Arrays become `new int[0]`.
+- Types `new` doesn't fit get a default value instead: `0`, `0L`, `0f`, `0.0`, `false`, `'\0'`,
+  and `""` for `String`. Boxed types (`Integer`, …) get the same value as their primitive.
+- Imports aren't added. Run `<leader>jo` afterwards, or `gra` on the error.
 
 Debugging a `main` method or a test uses the same shared [DAP](#debugging-dap) keymaps
 (`<F5>`, `<leader>b`, ...) once jdtls generates a run configuration. `<F5>` lists every main class
