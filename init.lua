@@ -1053,7 +1053,12 @@ require('lazy').setup({
       -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
       -- - sd'   - [S]urround [D]elete [']quotes
       -- - sr)'  - [S]urround [R]eplace [)] [']
-      require('mini.surround').setup()
+      --
+      -- respect_selection_type: a linewise target (V selection, `ip`, `2j`, ...) puts the
+      -- surrounding on its own lines and indents the wrapped lines one level, e.g.
+      -- `Vjj` then `sa}` (or `saip}`) wraps the lines in a `{ ... }` block; `sd}` undoes it
+      -- (removes the brace lines and dedents).
+      require('mini.surround').setup { respect_selection_type = true }
 
       -- Simple and easy statusline.
       --  You could remove this setup call if you don't like it,

@@ -119,6 +119,7 @@ table is currently `Disabled`.
 | `grn` | Normal | LSP rename symbol | init.lua:545 | Active |
 | `grr` | Normal | LSP goto references | init.lua:552 | Active |
 | `grt` | Normal | LSP goto type definition | init.lua:584 | Active |
+| `sa}` (linewise) | Normal (`saip}`, `sa2j}`), Visual-line (mini.surround default) | Wrap lines in `{`/`}` on their own lines and indent them (`respect_selection_type`) | mini.surround default | Active |
 | `saiw)` | Normal (mini.surround default) | Surround add around inner word with `)` | mini.surround default | Active |
 | `sd'` | Normal (mini.surround default) | Surround delete `'` | mini.surround default | Active |
 | `sr)'` | Normal (mini.surround default) | Surround replace `)` with `'` | mini.surround default | Active |

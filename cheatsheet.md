@@ -354,6 +354,8 @@ in arguments.
 | `saiw)` | **S**urround **a**dd around inner word with `)` |
 | `sd'` | **S**urround **d**elete `'` |
 | `sr)'` | **S**urround **r**eplace `)` with `'` |
+| `V`…`sa}` / `saip}` | Wrap whole lines in a `{`/`}` block: braces go on their own lines, wrapped lines get indented one level (any linewise motion works, e.g. `sa2j}`) |
+| `sd}` | On a block made that way: delete the brace lines and dedent the contents |
 
 ## Git (gitsigns)
 
