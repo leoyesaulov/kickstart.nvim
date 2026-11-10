@@ -318,6 +318,12 @@ it's replaced instead of duplicated: `new UnknownBlueprint|Exception()` + `Unkno
 → `new UnknownBlueprintException()`. A tail that doesn't match is kept (`Unknown|Foo` +
 `UnknownError` → `UnknownErrorFoo`).
 
+**Empty lines:** the first character you type on an empty line (where Vim has dropped the
+autoindent) first gives the line the indent its context needs. So snippets and completions typed
+there expand at the right column, and so does every line of a multi-line snippet like `fori`.
+Not used in Python, YAML, Markdown, Make or plain text, where indentation means something.
+Opening the menu with `<C-Space>` before typing anything doesn't reindent.
+
 > Note: `<Tab>`/`<S-Tab>` are also bound in **Normal mode** by bufferline.nvim (see
 > [Buffer Tabs](#buffer-tabs-bufferlinenvim)) — no conflict, since blink.cmp's mapping is
 > Insert/Select-mode only.

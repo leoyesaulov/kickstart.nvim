@@ -216,6 +216,86 @@ local function run()
   end
   vim.api.nvim_buf_delete(sfx_buf, { force = true })
 
+  -- Typing on an empty line indents it first (custom.blank_line_indent).
+  local bli = require 'custom.blank_line_indent'
+  local bli_buf = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_current_buf(bli_buf)
+  vim.bo[bli_buf].expandtab, vim.bo[bli_buf].tabstop, vim.bo[bli_buf].shiftwidth = false, 8, 8
+  -- { line, desired cols, want prefix }
+  for _, case in ipairs {
+    { '', 16, '\t\t' },
+    { '\t', 16, '\t' },
+    { '', 12, '\t    ' },
+    { '\t\t', 16, nil },
+    { '\t\t\t', 16, nil },
+    { '    ', 16, nil },
+    { 'x', 16, nil },
+    { '', nil, nil },
+  } do
+    local got = bli.prefix_for(case[1], case[2], bli_buf)
+    if got ~= case[3] then
+      h.fail(('blank_line_indent.prefix_for(%q, %s) = %q, want %q'):format(case[1], tostring(case[2]), tostring(got), tostring(case[3])))
+    end
+  end
+  vim.bo[bli_buf].expandtab, vim.bo[bli_buf].shiftwidth = true, 4
+  if bli.prefix_for('', 8, bli_buf) ~= '        ' then
+    h.fail 'blank_line_indent.prefix_for with expandtab should give 8 spaces'
+  end
+  vim.bo[bli_buf].expandtab, vim.bo[bli_buf].shiftwidth = false, 8
+
+  -- End to end in a Java buffer with treesitter's indentexpr. Filetype set without autocmds so
+  -- jdtls doesn't try to attach to this unnamed buffer.
+  local java_lines = { 'class Foo {', '\tvoid m() {', '\t\tint x = 1;', '', '\t}', '}' }
+  local function blank_line_buf(ft, lines)
+    vim.api.nvim_buf_set_lines(bli_buf, 0, -1, false, lines)
+    vim.cmd('noautocmd setlocal filetype=' .. ft)
+    vim.treesitter.start(bli_buf, ft)
+    vim.bo[bli_buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+  end
+  blank_line_buf('java', java_lines)
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  vim.api.nvim_feedkeys('iObj\27', 'xt', false)
+  if vim.fn.getline(4) ~= '\t\tObj' then
+    h.fail(('blank_line_indent: typing on the empty line gave %q, want "\\t\\tObj"'):format(vim.fn.getline(4)))
+  end
+
+  -- A multi-line LuaSnip snippet expanded there is indented on every line.
+  local ls = require 'luasnip'
+  if #ls.get_snippets 'java' == 0 then
+    require('luasnip.loaders.from_lua').load { paths = { vim.fn.stdpath 'config' .. '/lua/custom/snippets' }, include = { 'java' } }
+  end
+  local fori
+  for _, snippet in ipairs(ls.get_snippets 'java') do
+    if snippet.trigger == 'fori' then
+      fori = snippet
+    end
+  end
+  blank_line_buf('java', java_lines)
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  vim.api.nvim_feedkeys('ifori\27', 'xt', false)
+  if not fori then
+    h.fail 'blank_line_indent: fori snippet not found'
+  else
+    vim.api.nvim_win_set_cursor(0, { 4, 6 })
+    ls.snip_expand(fori, { clear_region = { from = { 3, 2 }, to = { 3, 6 } } })
+    local got = vim.api.nvim_buf_get_lines(bli_buf, 3, 6, false)
+    if not (got[1]:match '^\t\tfor %(' and got[2]:match '^\t\t\t' and got[3] == '\t\t}') then
+      h.fail('blank_line_indent: fori on the empty line expanded to ' .. vim.inspect(got))
+    end
+    ls.unlink_current()
+    -- Flush the keys LuaSnip queued to select the first placeholder, and leave Select mode.
+    vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'xt', false)
+  end
+
+  -- Python is excluded: a col-0 line stays at col 0.
+  blank_line_buf('python', { 'def f():', '    x = 1', '', '' })
+  vim.api.nvim_win_set_cursor(0, { 3, 0 })
+  vim.api.nvim_feedkeys('iy\27', 'xt', false)
+  if vim.fn.getline(3) ~= 'y' then
+    h.fail(('blank_line_indent: python line got indented: %q'):format(vim.fn.getline(3)))
+  end
+  vim.api.nvim_buf_delete(bli_buf, { force = true })
+
   -- Browser-style tab close/reopen (custom.tabs, <leader>w / <leader>W).
   local tabs = require 'custom.tabs'
   local function tab_file(name, lines)

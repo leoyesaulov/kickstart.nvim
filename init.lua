@@ -258,6 +258,9 @@ require 'custom.filetypes'
 local completion_usage = require 'custom.completion_usage'
 completion_usage.setup()
 
+-- Typing on an empty line indents it first, so snippets/completions land at the right column.
+require('custom.blank_line_indent').setup()
+
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
