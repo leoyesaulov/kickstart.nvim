@@ -21,7 +21,7 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 ## Table of Contents
 1. [Basics](#basics)
 2. [Core / Window Navigation](#core--window-navigation)
-3. [Everyday Editing](#everyday-editing) — commenting, undo, clipboard, search & replace, macros
+3. [Everyday Editing](#everyday-editing) — commenting, undo, clipboard, search & replace, autosave, macros
 4. [Search & Telescope](#search--telescope)
 5. [LSP](#lsp)
 6. [Formatting](#formatting)
@@ -193,9 +193,26 @@ and `p` pastes from it. **Deletes copy too**, so `dd`/`x`/`c` overwrite whatever
 | `<leader>w` / `<leader>W` | Close the current buffer tab and go back to the previous one / reopen the last closed tab (see [Buffer Tabs](#buffer-tabs-bufferlinenvim)) |
 | `:bd` | Close the current buffer the plain way: also closes its window if it's in a split |
 | `:w` / `:wa` | Save / save all |
-| `:q` / `:qa` | Quit the window / quit everything. With unsaved changes you're asked whether to save (`confirm`) |
+| `:q` / `:qa` | Quit the window / quit everything. With autosave on, unsaved changes are written first; with it off, you're asked whether to save (`confirm`) |
 | `ZZ` / `ZQ` | Save and quit / quit without saving |
 | `:e!` | Throw away unsaved changes and reload the file from disk |
+
+### Autosave
+
+Files save themselves **when you leave them**, not while you type. On by default.
+
+| Key / Trigger | What happens |
+|---|---|
+| `<leader>ta` | Toggle autosave on/off for this session (turning it on saves anything left unsaved meanwhile) |
+| Leaving a buffer | Saves the file you're leaving: `<C-h/j/k/l>` into neo-tree or a split with another file, `:e`, `<C-^>`, `<Tab>`, opening Telescope / a terminal, `<leader>w` (closes without the save prompt) |
+| Terminal loses focus | Saves every modified file (cmd-tab away, click another window). Needs `set -g focus-events on` inside tmux |
+| `:q` / `:qa` / `:make` | Write instead of refusing with E37 (`'autowriteall'`) |
+| Terminal regains focus | Reloads files changed on disk meanwhile (`:checktime`) |
+
+**Not** saved: `<Esc>` out of insert mode, or moving into a split showing the *same* file —
+every save runs [format on save](#formatting), and reformatting on each `<Esc>` would shift text
+mid-edit. Never autosaved: `.ipynb` notebooks, unnamed / read-only buffers, and non-file
+buffers (neo-tree, Telescope, help, terminals). Save those with `:w`.
 
 ### Spelling
 
@@ -407,8 +424,9 @@ Shows open buffers as IDE-style tabs along the top, with LSP diagnostic icons pe
 
 Closing works like a browser: `<leader>w` goes back through the tabs **in the order you last
 used them**, not to the tab next to it, so pressing it repeatedly walks back through your
-history. Splits and the file tree stay where they are, and if the buffer has unsaved changes you
-get a Yes/No/Cancel save prompt. `<leader>W` is Ctrl+Shift+T: closed tabs form a stack, so
+history. Splits and the file tree stay where they are. Unsaved changes are written by
+[autosave](#autosave); with autosave off (or for `.ipynb` / unnamed buffers) you get a
+Yes/No/Cancel save prompt instead. `<leader>W` is Ctrl+Shift+T: closed tabs form a stack, so
 pressing it again brings back older ones, each at the line where you closed it.
 
 ## Problems Panel (trouble.nvim)

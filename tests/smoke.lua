@@ -342,17 +342,31 @@ local function run()
     h.fail(('tabs.close in a split left %d windows, want 2'):format(#vim.api.nvim_tabpage_list_wins(0)))
   end
   vim.cmd 'silent! only'
-  local dirty = tab_file 'd.txt'
-  vim.api.nvim_buf_set_lines(dirty, 0, 1, false, { 'changed' })
+  local autosave = require 'custom.autosave'
   local real_confirm = vim.fn.confirm
+  local prompted = false
   vim.fn.confirm = function()
+    prompted = true
     return 3 -- Cancel
   end
+  -- Autosave on (the default): closing a modified tab saves it without asking.
+  local saved = tab_file 'e.txt'
+  vim.api.nvim_buf_set_lines(saved, 0, 1, false, { 'autosaved' })
   tabs.close()
+  if prompted or vim.api.nvim_buf_is_valid(saved) or vim.fn.readfile(tmp .. '/tabs/e.txt')[1] ~= 'autosaved' then
+    h.fail 'tabs.close with autosave on did not save the modified buffer without prompting'
+  end
+  -- Autosave off: the save prompt comes back, and Cancel keeps the tab open.
+  autosave.enabled = false
+  local dirty = tab_file 'd.txt'
+  vim.api.nvim_buf_set_lines(dirty, 0, 1, false, { 'changed' })
+  tabs.close()
+  autosave.enabled = true
   vim.fn.confirm = real_confirm
-  if not vim.api.nvim_buf_is_valid(dirty) or vim.api.nvim_get_current_buf() ~= dirty then
+  if not prompted or not vim.api.nvim_buf_is_valid(dirty) or vim.api.nvim_get_current_buf() ~= dirty then
     h.fail 'tabs.close on a modified buffer did not stop when the save prompt was cancelled'
   end
+  vim.bo[dirty].modified = false -- or leaving it during cleanup would autosave it
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_get_name(buf):find(tmp .. '/tabs/', 1, true) then
       vim.api.nvim_buf_delete(buf, { force = true })

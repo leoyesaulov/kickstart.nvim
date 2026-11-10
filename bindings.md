@@ -63,6 +63,7 @@ table is currently `Disabled`.
 | `<leader>ss` | Normal | Search Select Telescope (pick a picker) | init.lua:437 | Active |
 | `<leader>sw` | Normal | Search current word | init.lua:438 | Active |
 | `<leader>tD` | Normal | Toggle deleted-line preview (git) | gitsigns.lua:57 | Active |
+| `<leader>ta` | Normal | Toggle autosave (saves on buffer leave / focus loss / `:q`, not on `<Esc>`) | init.lua:266 | Active |
 | `<leader>tb` | Normal | Toggle current-line git blame | gitsigns.lua:56 | Active |
 | `<leader>td` | Normal (global; loads neotest on first use) | Test: debug nearest (neotest, via DAP) | custom/plugins/testing.lua:30 | Active |
 | `<leader>tf` | Normal (global; loads neotest on first use) | Test: run all tests in file (neotest) | custom/plugins/testing.lua:23 | Active |
@@ -71,7 +72,7 @@ table is currently `Disabled`.
 | `<leader>tr` | Normal (global; loads neotest on first use) | Test: run nearest (neotest) | custom/plugins/testing.lua:16 | Active |
 | `<leader>ts` | Normal (global; loads neotest on first use) | Test: toggle summary panel (neotest) | custom/plugins/testing.lua:37 | Active |
 | `<leader>tt` | Normal | Toggle integrated terminal (toggleterm) | custom/plugins/ui.lua:58 | Active |
-| `<leader>w` | Normal (bufferline) | Close the current tab and go back to the previously used one (MRU order, keeps splits; asks to save if modified) | custom/plugins/ui.lua:21 | Active |
+| `<leader>w` | Normal (bufferline) | Close the current tab and go back to the previously used one (MRU order, keeps splits; autosaves, or asks to save if autosave is off) | custom/plugins/ui.lua:21 | Active |
 | `<leader>W` | Normal (bufferline) | Reopen the last closed tab (repeat for older ones, like Ctrl+Shift+T) | custom/plugins/ui.lua:28 | Active |
 | `<leader>xq` | Normal | Trouble: toggle quickfix list | custom/plugins/ui.lua:50 | Active |
 | `<leader>xw` | Normal | Trouble: toggle buffer-only diagnostics | custom/plugins/ui.lua:49 | Active |
@@ -129,8 +130,8 @@ table is currently `Disabled`.
 **Keymap namespace notes** (checked while adding the rows above, to avoid silent prefix-shadowing):
 - `<leader>b` / `<leader>B` are complete bindings (debug breakpoints) — bufferline deliberately
   avoids a `<leader>b*` prefix and uses bare `<Tab>`/`<S-Tab>` instead.
-- `<leader>t*` now holds `th`, `tb`, `tD`, `tt`, `tr`, `tf`, `td`, `ts`, `to` — all distinct at the
-  second character (or distinguished by case, e.g. `tb` vs `tD`/`td`), so none shadows another.
+- `<leader>t*` now holds `th`, `ta`, `tb`, `tD`, `tt`, `tr`, `tf`, `td`, `ts`, `to` — all distinct at
+  the second character (or distinguished by case, e.g. `tb` vs `tD`/`td`), so none shadows another.
 - `<leader>x*` (trouble) and `<leader>j*` (Java) and `<leader>c*` (`cv`, venv) and `<leader>g*`
   (`gg`, lazygit) were previously unused prefixes.
 - `<leader>m*` (molten / Jupyter notebooks) was previously unused; every binding under it is two

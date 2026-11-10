@@ -261,6 +261,12 @@ completion_usage.setup()
 -- Typing on an empty line indents it first, so snippets/completions land at the right column.
 require('custom.blank_line_indent').setup()
 
+-- Autosave when you leave a file (window move, buffer switch, focus loss, :q), not on <Esc>.
+require('custom.autosave').setup()
+vim.keymap.set('n', '<leader>ta', function()
+  require('custom.autosave').toggle()
+end, { desc = '[T]oggle [A]utosave' })
+
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).

@@ -77,6 +77,8 @@ function M.close()
     return
   end
   local name = vim.api.nvim_buf_get_name(buf)
+  -- With autosave on, closing a tab is just another way of leaving it: save without asking.
+  require('custom.autosave').save(buf)
   if vim.bo[buf].modified then
     local display = name ~= '' and vim.fn.fnamemodify(name, ':~:.') or '[No Name]'
     local choice = vim.fn.confirm(('Save changes to %s?'):format(display), '&Yes\n&No\n&Cancel', 1)
