@@ -190,7 +190,8 @@ and `p` pastes from it. **Deletes copy too**, so `dd`/`x`/`c` overwrite whatever
 | `<C-h/j/k/l>` | Move between windows (see [Core](#core--window-navigation)) |
 | `<C-w>q` / `<C-w>o` | Close this window / close every other window |
 | `<C-w>=` | Make all windows the same size. Or drag a split's border with the mouse |
-| `:bd` | Close the current buffer (its tab in bufferline) |
+| `<leader>w` / `<leader>W` | Close the current buffer tab and go back to the previous one / reopen the last closed tab (see [Buffer Tabs](#buffer-tabs-bufferlinenvim)) |
+| `:bd` | Close the current buffer the plain way: also closes its window if it's in a split |
 | `:w` / `:wa` | Save / save all |
 | `:q` / `:qa` | Quit the window / quit everything. With unsaved changes you're asked whether to save (`confirm`) |
 | `ZZ` / `ZQ` | Save and quit / quit without saving |
@@ -388,6 +389,14 @@ Shows open buffers as IDE-style tabs along the top, with LSP diagnostic icons pe
 |---|---|---|
 | `<Tab>` | Normal | Next buffer tab |
 | `<S-Tab>` | Normal | Previous buffer tab |
+| `<leader>w` | Normal | Close the current tab and go back to the one you used before it |
+| `<leader>W` | Normal | Reopen the last closed tab |
+
+Closing works like a browser: `<leader>w` goes back through the tabs **in the order you last
+used them**, not to the tab next to it, so pressing it repeatedly walks back through your
+history. Splits and the file tree stay where they are, and if the buffer has unsaved changes you
+get a Yes/No/Cancel save prompt. `<leader>W` is Ctrl+Shift+T: closed tabs form a stack, so
+pressing it again brings back older ones, each at the line where you closed it.
 
 ## Problems Panel (trouble.nvim)
 

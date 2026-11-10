@@ -175,6 +175,64 @@ local function run()
   end
   usage.state_dir = real_state_dir
 
+  -- Browser-style tab close/reopen (custom.tabs, <leader>w / <leader>W).
+  local tabs = require 'custom.tabs'
+  local function tab_file(name, lines)
+    local path = tmp .. '/tabs/' .. name
+    vim.fn.mkdir(tmp .. '/tabs', 'p')
+    vim.fn.writefile(lines or { name .. ' 1', name .. ' 2', name .. ' 3' }, path)
+    vim.cmd.edit(vim.fn.fnameescape(path))
+    return vim.api.nvim_get_current_buf()
+  end
+  local function current_name()
+    return vim.fs.basename(vim.api.nvim_buf_get_name(0))
+  end
+  vim.cmd 'silent! only'
+  tab_file 'a.txt'
+  tab_file 'b.txt'
+  tab_file 'c.txt'
+  tab_file 'b.txt'
+  vim.api.nvim_win_set_cursor(0, { 2, 1 })
+  tab_file 'c.txt' -- MRU now c, b, a; bufferline order is a, b, c
+  tabs.close()
+  if current_name() ~= 'b.txt' then
+    h.fail(('tabs.close from c.txt went to %s, want b.txt'):format(current_name()))
+  end
+  tabs.close()
+  if current_name() ~= 'a.txt' then
+    h.fail(('tabs.close from b.txt went to %s, want a.txt'):format(current_name()))
+  end
+  tabs.reopen()
+  if current_name() ~= 'b.txt' or vim.api.nvim_win_get_cursor(0)[1] ~= 2 then
+    h.fail(('tabs.reopen gave %s at line %d, want b.txt at line 2'):format(current_name(), vim.api.nvim_win_get_cursor(0)[1]))
+  end
+  tabs.reopen()
+  if current_name() ~= 'c.txt' then
+    h.fail(('second tabs.reopen gave %s, want c.txt'):format(current_name()))
+  end
+  vim.cmd.vsplit()
+  tabs.close()
+  if #vim.api.nvim_tabpage_list_wins(0) ~= 2 then
+    h.fail(('tabs.close in a split left %d windows, want 2'):format(#vim.api.nvim_tabpage_list_wins(0)))
+  end
+  vim.cmd 'silent! only'
+  local dirty = tab_file 'd.txt'
+  vim.api.nvim_buf_set_lines(dirty, 0, 1, false, { 'changed' })
+  local real_confirm = vim.fn.confirm
+  vim.fn.confirm = function()
+    return 3 -- Cancel
+  end
+  tabs.close()
+  vim.fn.confirm = real_confirm
+  if not vim.api.nvim_buf_is_valid(dirty) or vim.api.nvim_get_current_buf() ~= dirty then
+    h.fail 'tabs.close on a modified buffer did not stop when the save prompt was cancelled'
+  end
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_get_name(buf):find(tmp .. '/tabs/', 1, true) then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
+  end
+
   -- jdtls indentation follows the buffer (custom.jdtls_indent).
   local jdtls_indent = require 'custom.jdtls_indent'
   local ind_buf = vim.api.nvim_create_buf(true, false)

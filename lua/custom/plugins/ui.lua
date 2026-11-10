@@ -2,16 +2,35 @@
 -- Keymap namespaces checked against existing bindings before picking these (see bindings.md):
 -- `<leader>b`/`<leader>B` are taken by debug.lua's breakpoint toggles, so bufferline uses bare
 -- `<Tab>`/`<S-Tab>` (normal mode only — blink.cmp's Tab/S-Tab mappings are insert-mode only,
--- so there's no conflict) instead of a `<leader>b*` prefix.
+-- so there's no conflict) instead of a `<leader>b*` prefix. `<leader>w`/`<leader>W` close / reopen
+-- tabs browser-style (custom/tabs.lua); `<C-w>` stays Vim's window prefix.
 return {
   { -- Buffer tabs, like an IDE's open-editors bar
     'akinsho/bufferline.nvim',
     version = '*',
     dependencies = 'nvim-tree/nvim-web-devicons',
     event = 'VeryLazy',
+    init = function()
+      -- At startup, not on VeryLazy, so the tab history covers the first buffers too.
+      require('custom.tabs').setup()
+    end,
     keys = {
       { '<Tab>', '<cmd>BufferLineCycleNext<cr>', desc = 'Next buffer tab' },
       { '<S-Tab>', '<cmd>BufferLineCyclePrev<cr>', desc = 'Previous buffer tab' },
+      {
+        '<leader>w',
+        function()
+          require('custom.tabs').close()
+        end,
+        desc = 'Close tab, go to the previous one',
+      },
+      {
+        '<leader>W',
+        function()
+          require('custom.tabs').reopen()
+        end,
+        desc = 'Reopen last closed tab',
+      },
     },
     opts = {
       options = {

@@ -18,7 +18,7 @@ table is currently `Disabled`.
 | `<leader>b` | Normal | Debug: toggle breakpoint | debug.lua:56-62 | Active |
 | `<leader>cv` | Normal | Python: open venv-selector picker | custom/plugins/python.lua:11 | Active |
 | `<leader>f` | All | Format buffer (conform.nvim) | init.lua:766-773 | Active |
-| `<leader>gg` | Normal | Open LazyGit | custom/plugins/ui.lua:50 | Active |
+| `<leader>gg` | Normal | Open LazyGit | custom/plugins/ui.lua:69 | Active |
 | `<leader>hD` | Normal | Git: diff against last commit | gitsigns.lua:52-54 | Active |
 | `<leader>hR` | Normal | Git: reset buffer | gitsigns.lua:48 | Active |
 | `<leader>hS` | Normal | Git: stage buffer | gitsigns.lua:46 | Active |
@@ -70,10 +70,12 @@ table is currently `Disabled`.
 | `<leader>to` | Normal (global; loads neotest on first use) | Test: toggle output panel (neotest) | custom/plugins/testing.lua:44 | Active |
 | `<leader>tr` | Normal (global; loads neotest on first use) | Test: run nearest (neotest) | custom/plugins/testing.lua:16 | Active |
 | `<leader>ts` | Normal (global; loads neotest on first use) | Test: toggle summary panel (neotest) | custom/plugins/testing.lua:37 | Active |
-| `<leader>tt` | Normal | Toggle integrated terminal (toggleterm) | custom/plugins/ui.lua:39 | Active |
-| `<leader>xq` | Normal | Trouble: toggle quickfix list | custom/plugins/ui.lua:31 | Active |
-| `<leader>xw` | Normal | Trouble: toggle buffer-only diagnostics | custom/plugins/ui.lua:30 | Active |
-| `<leader>xx` | Normal | Trouble: toggle diagnostics (all buffers) | custom/plugins/ui.lua:29 | Active |
+| `<leader>tt` | Normal | Toggle integrated terminal (toggleterm) | custom/plugins/ui.lua:58 | Active |
+| `<leader>w` | Normal (bufferline) | Close the current tab and go back to the previously used one (MRU order, keeps splits; asks to save if modified) | custom/plugins/ui.lua:21 | Active |
+| `<leader>W` | Normal (bufferline) | Reopen the last closed tab (repeat for older ones, like Ctrl+Shift+T) | custom/plugins/ui.lua:28 | Active |
+| `<leader>xq` | Normal | Trouble: toggle quickfix list | custom/plugins/ui.lua:50 | Active |
+| `<leader>xw` | Normal | Trouble: toggle buffer-only diagnostics | custom/plugins/ui.lua:49 | Active |
+| `<leader>xx` | Normal | Trouble: toggle diagnostics (all buffers) | custom/plugins/ui.lua:48 | Active |
 | `\` | Normal (global) | Reveal file tree | neo-tree.lua:14 | Active |
 | `\` | Normal (inside Neo-tree) | Close Neo-tree window | neo-tree.lua:18-20 | Active |
 | `]c` | Normal | Jump to next git change | gitsigns.lua:19-25 | Active |
@@ -92,8 +94,8 @@ table is currently `Disabled`.
 | `<C-space>` | Insert (blink.cmp) | Open completion menu / show docs if open | blink.cmp default | Active |
 | `<C-y>` | Insert (blink.cmp) | Accept selected completion | blink.cmp default | Active |
 | `<Tab>` / `<S-Tab>` | Insert, Select (blink.cmp) | Move through snippet placeholders (keeps current placeholder text) | blink.cmp default | Active |
-| `<Tab>` | Normal (bufferline) | Next buffer tab | custom/plugins/ui.lua:13 | Active |
-| `<S-Tab>` | Normal (bufferline) | Previous buffer tab | custom/plugins/ui.lua:14 | Active |
+| `<Tab>` | Normal (bufferline) | Next buffer tab | custom/plugins/ui.lua:18 | Active |
+| `<S-Tab>` | Normal (bufferline) | Previous buffer tab | custom/plugins/ui.lua:19 | Active |
 | `<Esc>` | Select (snippet placeholder) | Exit to Normal mode, keep placeholder text | Vim built-in | Active |
 | `<Space>` / `<Tab>` | Normal (Java field picker float) | Toggle the field/method under the cursor, move down | custom/jdtls_picker.lua:82 | Active |
 | `a` | Normal (Java field picker float) | Check all / uncheck all | custom/jdtls_picker.lua:88 | Active |
@@ -132,6 +134,8 @@ table is currently `Disabled`.
   (`gg`, lazygit) were previously unused prefixes.
 - `<leader>m*` (molten / Jupyter notebooks) was previously unused; every binding under it is two
   keys, so none shadows another (`ma` vs `mA` differ by case). `<leader>j*` stays Java-only.
+- `<leader>w` / `<leader>W` (close / reopen buffer tab) were previously unused, and nothing else
+  starts with them, so they fire without a which-key wait.
 - `<leader>r` (run current file) was previously unused, and nothing else starts with `<leader>r`,
   so it fires without a which-key wait.
 - `]x` / `[x` (next/previous notebook cell) were picked because `]c` / `[c` belong to gitsigns.
