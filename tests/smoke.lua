@@ -139,7 +139,12 @@ local function run()
     vim.fn.mkdir(vim.fs.dirname(path), 'p')
     local buf = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_buf_set_name(buf, path)
-    vim.bo[buf].filetype = ft
+    -- completion_usage only reads 'filetype'. Skip the FileType autocmd: it would schedule an
+    -- LSP start (lua_ls resolves root_dir asynchronously) that runs after the buffer is deleted
+    -- below and errors with "Invalid buffer id" from vim.fs.root.
+    vim.api.nvim_buf_call(buf, function()
+      vim.cmd('noautocmd setlocal filetype=' .. ft)
+    end)
     return buf
   end
   local function boosted(buf)
