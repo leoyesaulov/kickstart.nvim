@@ -313,6 +313,11 @@ nearest `pom.xml`/`build.gradle`/`pyproject.toml`/...) rank higher, by up to +12
 matched character). Overloads share a count. After `obj.` the members you use most come first.
 Stats are per project in `~/.local/state/nvim/completion-usage/`. Delete a project's file to reset it.
 
+**Completing mid-word:** if the rest of the word after the cursor is exactly the end of the item,
+it's replaced instead of duplicated: `new UnknownBlueprint|Exception()` + `UnknownBlueprintException`
+→ `new UnknownBlueprintException()`. A tail that doesn't match is kept (`Unknown|Foo` +
+`UnknownError` → `UnknownErrorFoo`).
+
 > Note: `<Tab>`/`<S-Tab>` are also bound in **Normal mode** by bufferline.nvim (see
 > [Buffer Tabs](#buffer-tabs-bufferlinenvim)) — no conflict, since blink.cmp's mapping is
 > Insert/Select-mode only.

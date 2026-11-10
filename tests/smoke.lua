@@ -175,6 +175,47 @@ local function run()
   end
   usage.state_dir = real_state_dir
 
+  -- Accepting mid-word swallows a matching tail after the cursor (custom.completion_suffix).
+  local suffix = require 'custom.completion_suffix'
+  local function edit(s, e, text)
+    return { range = { start = { line = 0, character = s }, ['end'] = { line = 0, character = e } }, newText = text }
+  end
+  -- { name, line, edit, want end column }
+  for _, case in ipairs {
+    { 'matching tail', 'new UnknownBlueprintException();', edit(4, 20, 'UnknownBlueprintException'), 29 },
+    { 'non-matching tail', 'new UnknownFoo();', edit(4, 11, 'UnknownError'), 11 },
+    { 'method snippet', 'obj.getFooBar();', edit(4, 9, 'getFooBar(${1})'), 13 },
+    { 'nothing after', 'new Unknown', edit(4, 11, 'UnknownError'), 11 },
+    { 'tail longer than item', 'new FooBarBaz', edit(4, 5, 'Foo'), 5 },
+    { 'case mismatch', 'new UnknownBlueprintexception', edit(4, 20, 'UnknownBlueprintException'), 20 },
+    { 'empty newText', 'new Foo', edit(4, 5, ''), 5 },
+  } do
+    local got = suffix.extend(case[3], case[2]).range['end'].character
+    if got ~= case[4] then
+      h.fail(('completion_suffix %s: end column %d, want %d'):format(case[1], got, case[4]))
+    end
+  end
+  local multi = edit(4, 5, 'FooBar')
+  multi.range['end'].line = 1
+  if suffix.extend(multi, 'Bar').range['end'].character ~= 5 then
+    h.fail 'completion_suffix: multi-line edit should be left alone'
+  end
+  -- End to end through blink's own get_from_item (wrapped in init.lua's blink config).
+  require('lazy').load { plugins = { 'blink.cmp' } }
+  local sfx_buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_set_current_buf(sfx_buf)
+  vim.api.nvim_buf_set_lines(sfx_buf, 0, -1, false, { 'throw new UnknownBlueprintException();' })
+  vim.api.nvim_win_set_cursor(0, { 1, 26 })
+  local te = require('blink.cmp.lib.text_edits').get_from_item {
+    label = 'UnknownBlueprintException',
+    cursor_column = 26,
+    textEdit = edit(10, 26, 'UnknownBlueprintException'),
+  }
+  if te.range['end'].character ~= 35 then
+    h.fail(('completion_suffix: blink get_from_item end column %d, want 35 (not wrapped?)'):format(te.range['end'].character))
+  end
+  vim.api.nvim_buf_delete(sfx_buf, { force = true })
+
   -- Browser-style tab close/reopen (custom.tabs, <leader>w / <leader>W).
   local tabs = require 'custom.tabs'
   local function tab_file(name, lines)

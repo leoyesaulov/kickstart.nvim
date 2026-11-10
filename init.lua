@@ -1001,6 +1001,12 @@ require('lazy').setup({
       -- Shows a signature help window while you type arguments for a function
       signature = { enabled = true },
     },
+    config = function(_, opts)
+      require('blink.cmp').setup(opts)
+      -- Accepting mid-word swallows the rest of the word when it's the item's tail
+      -- (UnknownBlueprint|Exception -> UnknownBlueprintException); see custom.completion_suffix.
+      require('custom.completion_suffix').setup()
+    end,
   },
 
   { -- You can easily change to a different colorscheme.
