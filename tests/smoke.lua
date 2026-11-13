@@ -461,27 +461,14 @@ local function run()
   end
   vim.api.nvim_buf_delete(snip_buf, { force = true })
 
-  -- Generated declaration snippets (kind + access + mods): unique triggers, right bodies.
-  local by_trig = {}
-  for _, sn in ipairs(dofile((vim.env.KICKSTART_REPO or vim.fn.getcwd()) .. '/lua/custom/snippets/java.lua')) do
-    if by_trig[sn.trigger] and sn.trigger ~= 'new' then
-      h.fail('java snippets: duplicate trigger ' .. sn.trigger)
-    end
-    by_trig[sn.trigger] = sn
-  end
-  for trig, want in pairs {
-    mta = '^protected abstract void name%(.*%);$',
-    mps = '^private static void name%(',
-    fp = '^private Type name;$',
-    ftsf = '^protected static final Type NAME = .*;$',
-    clsaei = '^public abstract class .* extends Parent implements Interface {',
-  } do
-    local sn = by_trig[trig]
-    local body = sn and table.concat(sn:get_docstring(), '\n'):gsub('%$%{%d+:([^}]*)%}', '%1'):gsub('%$%d+', '')
-    if not body then
-      h.fail('java snippets: missing generated trigger ' .. trig)
-    elseif not body:match(want) then
-      h.fail(('java snippet %s expands to %q, want %s'):format(trig, body, want))
+  -- Context-aware snippets: in each container only the valid snippets are listed, at most one per
+  -- trigger, and member snippets take the container's shape (no body in interfaces, ...).
+  local java_snippets = dofile((vim.env.KICKSTART_REPO or vim.fn.getcwd()) .. '/lua/custom/snippets/java.lua')
+  local by_trig, all_trigs = {}, {}
+  for _, sn in ipairs(java_snippets) do
+    if not by_trig[sn.trigger] then
+      by_trig[sn.trigger] = sn
+      table.insert(all_trigs, sn.trigger)
     end
   end
   for _, trig in ipairs { 'mpa', 'prv', 'psf' } do
@@ -489,6 +476,124 @@ local function run()
       h.fail('java snippets: unexpected trigger ' .. trig)
     end
   end
+  local ctx_buf = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_current_buf(ctx_buf)
+  -- The listed snippet per trigger with the cursor at the end of `X` in `lines`; fails on two.
+  local function listed(name, lines, filetype)
+    vim.cmd('noautocmd setlocal filetype=' .. (filetype or 'java'))
+    vim.api.nvim_buf_set_lines(ctx_buf, 0, -1, false, lines)
+    local row
+    for idx, line in ipairs(lines) do
+      row = row or (line:find 'X$' and idx)
+    end
+    vim.api.nvim_win_set_cursor(0, { row, #lines[row] })
+    local out = {}
+    for _, sn in ipairs(java_snippets) do
+      if sn.show_condition(lines[row]) then
+        if out[sn.trigger] then
+          h.fail(('java snippets (%s): two snippets listed for %s'):format(name, sn.trigger))
+        end
+        out[sn.trigger] = sn
+      end
+    end
+    return out
+  end
+  local function body_of(sn)
+    return (table.concat(sn:get_docstring(), '\n'):gsub('%$%{%d+:([^}]*)%}', '%1'):gsub('%$%d+', ''))
+  end
+  -- `want`: trigger -> body pattern (listed with that body), true (listed) or false (hidden).
+  for _, case in ipairs {
+    {
+      'interface',
+      { 'interface I {', '    X', '}' },
+      {
+        m = '^void name%(.*%);$',
+        ma = '^void name%(.*%);$',
+        md = '^default void name%(.*%) {',
+        ms = '^static void name%(.*%) {',
+        f = '^Type NAME = .*;$',
+        get = '^Type getName%(%);$',
+        set = '^void setName%(Type name%);$',
+        test = '^@Test\ndefault void',
+        mt = false,
+        mf = false,
+        fp = false,
+        ctor = false,
+        fgs = false,
+        sout = false,
+        intf = true,
+      },
+    },
+    {
+      'class',
+      { 'class A {', '    X', '}' },
+      { m = '^public void name%(.*%) {\n', fp = '^private Type name;$', ctor = '^public ', ma = false, md = false, sout = false, fin = false, cls = true },
+    },
+    {
+      'abstract class',
+      { 'public abstract class A {', '    X', '}' },
+      {
+        mta = '^protected abstract void name%(.*%);$',
+        mps = '^private static void name%(',
+        fp = '^private Type name;$',
+        ftsf = '^protected static final Type NAME = .*;$',
+      },
+    },
+    { 'enum', { 'enum E {', '    A, B;', '    X', '}' }, { ma = true, ctor = '^%(%) {', f = true } },
+    { 'record', { 'record R(int a) {', '    X', '}' }, { f = false, fp = false, fs = true, set = false, fgs = false, ma = false, m = true } },
+    { 'annotation', { '@interface An {', '    X', '}' }, { m = '^String name%(%);$', f = '^Type NAME', ms = false, get = false, cls = false } },
+    {
+      'method body',
+      { 'class A {', '    void f() {', '        X', '    }', '}' },
+      { sout = true, fori = true, new = '^Object obj = new', m = false, f = false, cls = false, ctor = false, al = true },
+    },
+    {
+      'anonymous class',
+      { 'class A {', '    void f() {', '        run(new Runnable() {', '            X', '        });', '    }', '}' },
+      { m = '^public void name%(.*%) {', sout = false },
+    },
+    { 'field initialiser', { 'class A {', '    Object o = X', '}' }, { new = '^new Object%(%)$', sout = false } },
+    {
+      'top level',
+      { 'package a;', '', 'X' },
+      { clsaei = '^public abstract class .* extends Parent implements Interface {', intf = true, sout = false, m = false },
+    },
+    { 'top level, empty file', { 'X' }, { cls = true, sout = false, m = false } },
+    { 'unknown (no java parser)', { 'X' }, { m = '^public void name%(.*%) {', sout = true, ma = true, md = false }, 'text' },
+  } do
+    local got = listed(case[1], case[2], case[4])
+    for trig, want in pairs(case[3]) do
+      if not by_trig[trig] then
+        h.fail('java snippets: missing trigger ' .. trig)
+      elseif want == false and got[trig] then
+        h.fail(('java snippets (%s): %s listed, want hidden'):format(case[1], trig))
+      elseif want ~= false and not got[trig] then
+        h.fail(('java snippets (%s): %s hidden, want listed'):format(case[1], trig))
+      elseif type(want) == 'string' and not body_of(got[trig]):match(want) then
+        h.fail(('java snippet %s (%s) expands to %q, want %s'):format(trig, case[1], body_of(got[trig]), want))
+      end
+    end
+  end
+  -- Every trigger is listed somewhere.
+  local seen = {}
+  for _, lines in ipairs {
+    { 'interface I {', '    X', '}' },
+    { 'abstract class A {', '    X', '}' },
+    { 'enum E {', '    A;', '    X', '}' },
+    { '@interface An {', '    X', '}' },
+    { 'class A {', '    void f() {', '        X', '    }', '}' },
+    { 'class A {', '    Object o = X', '}' },
+  } do
+    for trig in pairs(listed('coverage', lines)) do
+      seen[trig] = true
+    end
+  end
+  for _, trig in ipairs(all_trigs) do
+    if not seen[trig] and trig ~= 'fin' and trig ~= 'fina' then -- fin/fina: constructor only, tested below
+      h.fail('java snippets: ' .. trig .. ' is listed in no context')
+    end
+  end
+  vim.api.nvim_buf_delete(ctx_buf, { force = true })
 
   -- fin / fina: initialise the constructor's remaining fields (`new` or a default value).
   local fin_buf = vim.api.nvim_create_buf(true, false)

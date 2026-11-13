@@ -696,12 +696,33 @@ right after `.`/`::`, so `obj.` only lists the object's methods, fields and post
    |---|---|
    | Kind | `m` method · `f` field · `cls` class |
    | Access | none = public · `p` private · `t` protected (classes are always public) |
-   | Modifiers, in Java order | `a` abstract · `s` static · `f` final. For classes, add `e` extends · `i` implements · `ei` both |
+   | Modifiers, in Java order | `a` abstract · `s` static · `f` final · `d` default (interfaces only). For classes, add `e` extends · `i` implements · `ei` both |
 
    Examples: `m` public method, `mt` protected method, `mts` protected static method, `mta` protected
-   abstract method (just `;`, no body), `fpf` private final field, `ftsf` protected static final constant
-   (`NAME = …`), `clsa` abstract class, `clsae` abstract class extends, `clsfi` final class implements.
-   Private abstract (`mpa`) doesn't exist, since nothing could override it.
+   abstract method (just `;`, no body), `md` default method (in an interface), `fpf` private final
+   field, `ftsf` protected static final constant (`NAME = …`), `clsa` abstract class, `clsae` abstract
+   class extends, `clsfi` final class implements. Private abstract (`mpa`) doesn't exist, since
+   nothing could override it.
+
+**Where snippets show.** Snippets know where the cursor is (treesitter). Each one is listed only
+where it's valid, and the member snippets take the shape of the type they're in:
+- Statements (`sout`, `fori`, `if`, `tryc`, `thr`, `rnn`, `scan`, …) show only inside method,
+  constructor and lambda bodies. Members (`m…`, `f…`, `ctor`, `get`/`set`, `psvm`, `test`, `ov`)
+  show only in a type body. Types (`cls…`, `intf`, `enm`, `rec`) show at the top level or nested
+  in a type body. `al`/`hm`/`hs` work as a local variable or a field, and `new` gives the bare
+  `new X()` in field initialisers too.
+- **Interface:** `m`/`ma` give `void name();` with no body. `ms`, `mp`, `mps` and `md` give
+  `static`/`private`/`private static`/`default` methods with a body. `f`, `fs`, `ff` and `fsf` give a
+  constant, `Type NAME = …;`. `get`/`is`/`set`/`gs` give the declarations only (`Type getName();`),
+  and `test` gives a `default` `@Test` method. Redundant `public`/`abstract`/`static final` are left
+  out. Things an interface can't have are hidden: `mt…`, final methods, `fp…`/`ft…`, `ctor`, `fgs`.
+- **Abstract methods** (`ma…`) show only in abstract classes, enums and interfaces.
+- **Record:** no instance fields (`f`, `fp`, `ff`, …), no setters (`set`, `gs`, `fgs`). Static fields are fine.
+- **Enum:** `ctor`/`ctorp` leave out `public`, since enum constructors can't be public.
+- **Annotation** (`@interface`): `m` gives an element, `String name();`, and `f…` gives a constant.
+  Nothing else is listed.
+- If the code around the cursor doesn't parse (or there's no Java parser), everything shows, as
+  in a plain class.
 
 | Family | Triggers |
 |---|---|
