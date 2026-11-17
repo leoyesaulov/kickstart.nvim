@@ -261,6 +261,10 @@ completion_usage.setup()
 -- Typing on an empty line indents it first, so snippets/completions land at the right column.
 require('custom.blank_line_indent').setup()
 
+-- Neovim 0.12 treesitter highlighter: don't read pre-edit trees while an async re-parse runs
+-- (Index out of bounds after undoing a multi-line snippet). See the module header.
+require('custom.ts_stale_highlight').setup()
+
 -- Autosave when you leave a file (window move, buffer switch, focus loss, :q), not on <Esc>.
 require('custom.autosave').setup()
 vim.keymap.set('n', '<leader>ta', function()

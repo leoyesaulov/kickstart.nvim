@@ -221,6 +221,44 @@ local function run()
   end
   vim.api.nvim_buf_delete(sfx_buf, { force = true })
 
+  -- custom.ts_stale_highlight: while an async re-parse runs, the highlighter must not query the
+  -- pre-edit tree (Index out of bounds once lines were deleted, e.g. undoing a snippet).
+  local tsh_buf = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_current_buf(tsh_buf)
+  local tsh_lines = { 'class A {' }
+  for n = 1, 30 do
+    vim.list_extend(tsh_lines, { '    /**', '     * Doc ' .. n .. '.', '     */', '    int m' .. n .. '() { return ' .. n .. '; } // c', '' })
+  end
+  table.insert(tsh_lines, '}')
+  vim.api.nvim_buf_set_lines(tsh_buf, 0, -1, false, tsh_lines)
+  vim.bo[tsh_buf].filetype = 'java'
+  local tsh_hl = vim.treesitter.highlighter.active[tsh_buf]
+  if not tsh_hl then
+    vim.treesitter.start(tsh_buf, 'java')
+    tsh_hl = vim.treesitter.highlighter.active[tsh_buf]
+  end
+  tsh_hl.tree:parse(true)
+  tsh_hl:prepare_highlight_states(0, #tsh_lines)
+  -- Delete the last 20 lines (as undoing a snippet would) without re-parsing, mid "async parse".
+  vim.api.nvim_buf_set_lines(tsh_buf, #tsh_lines - 21, #tsh_lines - 1, false, {})
+  tsh_hl.parsing = true
+  local tsh_visited = 0
+  tsh_hl:for_each_highlight_state(function(state)
+    tsh_visited = tsh_visited + 1
+    local ok, err = pcall(function()
+      for _ in state.highlighter_query:query():iter_captures(state.tstree:root(), tsh_buf, 0, -1) do
+      end
+    end)
+    if not ok then
+      h.fail('ts_stale_highlight: highlighter read a stale tree: ' .. tostring(err))
+    end
+  end)
+  tsh_hl.parsing = false
+  if tsh_visited == 0 then
+    h.fail 'ts_stale_highlight: no highlight state was used while parsing (should swap in the edited tree)'
+  end
+  vim.api.nvim_buf_delete(tsh_buf, { force = true })
+
   -- Typing on an empty line indents it first (custom.blank_line_indent).
   local bli = require 'custom.blank_line_indent'
   local bli_buf = vim.api.nvim_create_buf(true, false)
