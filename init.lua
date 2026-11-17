@@ -265,6 +265,9 @@ require('custom.blank_line_indent').setup()
 -- (Index out of bounds after undoing a multi-line snippet). See the module header.
 require('custom.ts_stale_highlight').setup()
 
+-- Cursor-line diagnostics: re-wrap to the new width when a window is resized.
+require('custom.diagnostic_wrap').setup()
+
 -- Autosave when you leave a file (window move, buffer switch, focus loss, :q), not on <Esc>.
 require('custom.autosave').setup()
 vim.keymap.set('n', '<leader>ta', function()
@@ -667,7 +670,12 @@ require('lazy').setup({
             [vim.diagnostic.severity.HINT] = '󰌶 ',
           },
         } or {},
+        -- Other lines: message at end of line (cut off at the window edge if too long).
+        -- Cursor line: the full message below the code, word-wrapped to fit the window
+        -- (custom.diagnostic_wrap). `<C-w>d` opens it in a float.
+        virtual_lines = { current_line = true, format = require('custom.diagnostic_wrap').format },
         virtual_text = {
+          current_line = false,
           source = 'if_many',
           spacing = 2,
           format = function(diagnostic)

@@ -70,6 +70,7 @@ Leader key: `<Space>` &nbsp;|&nbsp; Localleader: `<Space>` &nbsp;|&nbsp; Plugin 
 |---|---|---|
 | `<Esc>` | Normal | Clear search highlight |
 | `<leader>q` | Normal | Open diagnostics quickfix list |
+| `<C-w>d` | Normal | Diagnostic under cursor in a float (built-in). The cursor line already shows its full message wrapped under the code; other lines show it at end of line, possibly cut off |
 | `<Esc><Esc>` | Terminal | Exit terminal mode to Normal (fallback: `<C-\><C-n>`) |
 | `<C-h>` | Normal | Move focus to window left |
 | `<C-l>` | Normal | Move focus to window right |

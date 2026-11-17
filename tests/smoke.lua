@@ -869,6 +869,82 @@ local function run()
     vim.wait(200)
   end
   check_messages 'force-load'
+
+  -- Cursor-line diagnostics are shown in full below the code, word-wrapped to the window
+  -- (custom.diagnostic_wrap); other lines keep end-of-line virtual text. Runs after the
+  -- force-load so init.lua's vim.diagnostic.config (nvim-lspconfig's config) is in effect.
+  do
+    local wrap = require 'custom.diagnostic_wrap'
+    local cfg = vim.diagnostic.config() or {}
+    if not (type(cfg.virtual_lines) == 'table' and cfg.virtual_lines.current_line == true and cfg.virtual_lines.format == wrap.format) then
+      h.fail 'vim.diagnostic.config().virtual_lines is not { current_line = true, format = custom.diagnostic_wrap.format }'
+    end
+    if not (type(cfg.virtual_text) == 'table' and cfg.virtual_text.current_line == false) then
+      h.fail 'vim.diagnostic.config().virtual_text.current_line is not false'
+    end
+
+    local msg = (
+      'Expected 2 arguments but got 3; the extra argument will be ignored at runtime and '
+      .. 'this sentence keeps going so that it cannot possibly fit on one line of a narrow window.'
+    )
+    local want = 'diag-code: ' .. msg
+    local ns = vim.api.nvim_create_namespace 'smoke_diagnostic_wrap'
+    vim.cmd 'vnew'
+    local win, buf = vim.api.nvim_get_current_win(), vim.api.nvim_get_current_buf()
+    vim.bo[buf].buftype = 'nofile'
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { 'local value = call(argument_one, argument_two)', 'local other = 1' })
+    vim.api.nvim_win_set_width(win, 60)
+    vim.cmd 'redraw'
+    vim.api.nvim_win_set_cursor(win, { 1, 0 })
+    vim.diagnostic.set(ns, buf, {
+      { lnum = 0, col = 14, message = msg, code = 'diag-code', severity = vim.diagnostic.severity.WARN },
+      { lnum = 1, col = 6, message = 'other line', severity = vim.diagnostic.severity.WARN },
+    })
+
+    local function check(width)
+      local textwidth = width - vim.fn.getwininfo(win)[1].textoff
+      local texts, eol_rows = {}, {}
+      for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, -1, 0, -1, { details = true })) do
+        local d = mark[4]
+        for _, vline in ipairs(d.virt_lines or {}) do
+          local w = 0
+          for _, chunk in ipairs(vline) do
+            w = w + vim.fn.strdisplaywidth(chunk[1])
+          end
+          if w > textwidth then
+            h.fail(('diagnostic virtual line is %d cells wide in a %d-cell text area: %s'):format(w, textwidth, vim.inspect(vline)))
+          end
+          table.insert(texts, vline[#vline][1])
+        end
+        if d.virt_text then
+          eol_rows[mark[2]] = true
+        end
+      end
+      local got = table.concat(texts, ' ')
+      if got ~= want then
+        h.fail(('cursor-line diagnostic at width %d is not the whole message:\n got: %s\nwant: %s'):format(width, got, want))
+      end
+      if eol_rows[0] or not eol_rows[1] then
+        h.fail(('end-of-line diagnostic text should be on line 2 only, got rows %s'):format(vim.inspect(vim.tbl_keys(eol_rows))))
+      end
+    end
+    check(60)
+    -- Narrower window: WinResized redraws and re-wraps. Headless Neovim has no UI, so it never
+    -- fires WinResized itself; fire it by hand.
+    vim.api.nvim_win_set_width(win, 50)
+    vim.api.nvim_exec_autocmds('WinResized', {})
+    check(50)
+
+    if wrap.wrap('aaaa bbbb cccccccccc', 4) ~= 'aaaa\nbbbb\ncccc\ncccc\ncc' then
+      h.fail(('diagnostic_wrap.wrap long-word split: %q'):format(wrap.wrap('aaaa bbbb cccccccccc', 4)))
+    end
+    if wrap.wrap('mismatch:\n  expected `i32`, found `u8` here', 17) ~= 'mismatch:\n  expected `i32`,\n  found `u8` here' then
+      h.fail(('diagnostic_wrap.wrap indent: %q'):format(wrap.wrap('mismatch:\n  expected `i32`, found `u8` here', 17)))
+    end
+    vim.api.nvim_buf_delete(buf, { force = true })
+    check_messages 'diagnostic-wrap'
+  end
+
   return ('startup clean, %d plugins loaded'):format(vim.tbl_count(lazy_config.plugins))
 end
 

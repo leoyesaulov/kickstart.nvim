@@ -93,6 +93,7 @@ table is currently `Disabled`.
 | `<C-l>` | Normal | Move focus to window right | init.lua:198 | Active |
 | `<C-n>` / `<C-p>`, `<Down>` / `<Up>` | Insert (blink.cmp) | Select next / previous completion item | blink.cmp default | Active |
 | `<C-space>` | Insert (blink.cmp) | Open completion menu / show docs if open | blink.cmp default | Active |
+| `<C-w>d` | Normal | Show diagnostics under cursor in a float (cursor line already shows them wrapped below the code) | Neovim built-in | Active |
 | `<C-y>` | Insert (blink.cmp) | Accept selected completion | blink.cmp default | Active |
 | `<Tab>` / `<S-Tab>` | Insert, Select (blink.cmp) | Move through snippet placeholders (keeps current placeholder text) | blink.cmp default | Active |
 | `<Tab>` | Normal (bufferline) | Next buffer tab | custom/plugins/ui.lua:18 | Active |
