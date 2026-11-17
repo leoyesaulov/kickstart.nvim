@@ -740,6 +740,13 @@ where it's valid, and the member snippets take the shape of the type they're in:
 | Collections (impl initials) | `al` ArrayList · `hm` HashMap · `hs` HashSet |
 | Misc | `ov` `@Override` · `test` JUnit 5 `@Test` method · `rnn` `Objects.requireNonNull(x, "x")` · `new` `Object obj = new Object()`, or just `new Object()` inside an argument list / after `=`, `return`, `->` · `scan` `Scanner(System.in)` |
 
+**Javadoc on methods.** Every `m…` snippet writes a Javadoc skeleton above the method. It follows
+the method head as you `<Tab>` through it: one `@param` per parameter (and `@param <T>` per type
+parameter, if the return type starts with `<T>`), and `@return` unless the return type is `void`.
+The descriptions get no placeholders, so `<Tab>` goes from the parameters straight to the body.
+Fill them in later if you want. Annotation elements get just the summary line. Other snippets
+(`get`/`set`, `ctor`, `psvm`, `test`, …) don't add a Javadoc.
+
 In the accessor snippets you type the type and the field name once. The method names are built
 as you type: typing `age` gives `getAge`/`setAge`.
 

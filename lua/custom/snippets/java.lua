@@ -13,6 +13,8 @@
 --   mods:   a = abstract, s = static, f = final, in Java order (classes: a/f, then e/i/ei
 --           for extends/implements); d = default (interfaces only: md)
 --   e.g. mts = protected static method, fpf = private final field, clsae = abstract class extends.
+-- Method snippets (m...) start with a Javadoc skeleton built from the head (see `javadoc`):
+-- `@param` per (type) parameter, `@return` unless void, redrawn as you tab through it.
 --
 -- Snippets are context-aware (see `context`): each is listed only where it's valid, and member
 -- snippets take the shape of their container. Statements (sout, fori, if, ...) only in method
@@ -67,6 +69,61 @@ local function method_name()
   local method = enclosing_method()
   local name = method and method:field('name')[1]
   return name and vim.treesitter.get_node_text(name, 0) or 'method'
+end
+
+-- Split `text` at commas outside `<>`/`()`, so generics and annotation arguments stay whole.
+local function split_top(text)
+  local parts, depth, start = {}, 0, 1
+  for pos = 1, #text do
+    local c = text:sub(pos, pos)
+    if c == '<' or c == '(' then
+      depth = depth + 1
+    elseif c == '>' or c == ')' then
+      depth = math.max(depth - 1, 0)
+    elseif c == ',' and depth == 0 then
+      table.insert(parts, text:sub(start, pos - 1))
+      start = pos + 1
+    end
+  end
+  table.insert(parts, text:sub(start))
+  return parts
+end
+
+-- Javadoc skeleton for a method head, from the return-type and parameter nodes' text:
+-- `@param <T>` per type parameter, `@param x` per parameter, `@return` unless void.
+local function javadoc(args)
+  local ret = vim.trim(table.concat(args[1], ' '))
+  local params = table.concat(args[2], ' ')
+  local lines = { '/**', ' *' }
+  if ret:sub(1, 1) == '<' then -- `<T extends Comparable<T>, U> T`
+    local depth, close = 0, nil
+    for pos = 1, #ret do
+      local c = ret:sub(pos, pos)
+      depth = depth + (c == '<' and 1 or c == '>' and -1 or 0)
+      if depth == 0 then
+        close = pos
+        break
+      end
+    end
+    for _, tp in ipairs(split_top(ret:sub(2, (close or #ret + 1) - 1))) do
+      local name = tp:match '^%s*([%w_$]+)'
+      if name then
+        table.insert(lines, ' * @param <' .. name .. '>')
+      end
+    end
+    ret = vim.trim(close and ret:sub(close + 1) or '')
+  end
+  for _, part in ipairs(split_top(params)) do
+    local name = part:gsub('[%s%[%]]+$', ''):match '([%w_$]+)$'
+    if name and name ~= 'this' and vim.trim(part) ~= name then -- a lone word is a type still being typed
+      table.insert(lines, ' * @param ' .. name)
+    end
+  end
+  if ret ~= '' and ret ~= 'void' then
+    table.insert(lines, ' * @return')
+  end
+  table.insert(lines, ' */')
+  return lines
 end
 
 -- `"a = " + a + ", b = " + b` for the enclosing method's parameters.
@@ -423,7 +480,7 @@ local function decl_snippets()
     return vim.trim(table.concat({ ... }, ' '):gsub('%s+', ' '))
   end
   local function method_nodes(body)
-    local nodes = { i(1, 'void'), i(2, 'name'), i(3) }
+    local nodes = { f(javadoc, { 1, 3 }), i(1, 'void'), i(2, 'name'), i(3) }
     if body then
       table.insert(nodes, i(0))
     end
@@ -434,9 +491,9 @@ local function decl_snippets()
     for _, mod in ipairs { { '', '' }, { 'a', 'abstract' }, { 's', 'static' }, { 'f', 'final' }, { 'sf', 'static final' } } do
       local trig, words = 'm' .. acc[1] .. mod[1], join(acc[2], mod[2])
       if mod[1] ~= 'a' then
-        add(trig, words .. ' method', words .. ' <> <>(<>) {\n\t<>\n}', method_nodes(true), in_type_body)
+        add(trig, words .. ' method', '<>\n' .. words .. ' <> <>(<>) {\n\t<>\n}', method_nodes(true), in_type_body)
       elseif acc[1] ~= 'p' then -- private abstract can't be overridden
-        add(trig, words .. ' method', words .. ' <> <>(<>);', method_nodes(false), in_abstract_body)
+        add(trig, words .. ' method', '<>\n' .. words .. ' <> <>(<>);', method_nodes(false), in_abstract_body)
       end
     end
 
@@ -454,14 +511,14 @@ local function decl_snippets()
   -- Interfaces: members are implicitly public, so the modifier is left out. Abstract methods
   -- have no body; static, private and default ones do. Fields are implicitly static final.
   for _, trig in ipairs { 'm', 'ma' } do
-    add(trig, 'interface method (no body)', '<> <>(<>);', method_nodes(false), in_interface)
+    add(trig, 'interface method (no body)', '<>\n<> <>(<>);', method_nodes(false), in_interface)
   end
   for _, mod in ipairs { { 's', 'static' }, { 'p', 'private' }, { 'ps', 'private static' }, { 'd', 'default' } } do
-    add('m' .. mod[1], mod[2] .. ' interface method', mod[2] .. ' <> <>(<>) {\n\t<>\n}', method_nodes(true), in_interface)
+    add('m' .. mod[1], mod[2] .. ' interface method', '<>\n' .. mod[2] .. ' <> <>(<>) {\n\t<>\n}', method_nodes(true), in_interface)
   end
   -- Annotation elements take no parameters and can't be void.
   for _, trig in ipairs { 'm', 'ma' } do
-    add(trig, 'annotation element', '<> <>();', { i(1, 'String'), i(2, 'name') }, in_annotation)
+    add(trig, 'annotation element', '/**\n *\n */\n<> <>();', { i(1, 'String'), i(2, 'name') }, in_annotation)
   end
   for _, trig in ipairs { 'f', 'fs', 'ff', 'fsf' } do
     add(trig, 'constant (implicitly public static final)', '<> <> = <>;', { i(1, 'Type'), i(2, 'NAME'), i(3) }, in_constant_body)

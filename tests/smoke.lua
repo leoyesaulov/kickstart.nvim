@@ -498,8 +498,11 @@ local function run()
     end
     return out
   end
-  local function body_of(sn)
-    return (table.concat(sn:get_docstring(), '\n'):gsub('%$%{%d+:([^}]*)%}', '%1'):gsub('%$%d+', ''))
+  -- The snippet's text with placeholders filled by their defaults; `doc` = keep the m... snippets'
+  -- leading Javadoc skeleton (dropped by default so the patterns below check the declaration).
+  local function body_of(sn, doc)
+    local text = table.concat(sn:get_docstring(), '\n'):gsub('%$%{%d+:([^}]*)%}', '%1'):gsub('%$%d+', '')
+    return doc and text or (text:gsub('^/%*%*\n.-%*/\n', ''))
   end
   -- `want`: trigger -> body pattern (listed with that body), true (listed) or false (hidden).
   for _, case in ipairs {
@@ -593,7 +596,69 @@ local function run()
       h.fail('java snippets: ' .. trig .. ' is listed in no context')
     end
   end
+  -- Method snippets (m...) start with a Javadoc skeleton; nothing else does.
+  for _, case in ipairs {
+    { 'class', { 'class A {', '    X', '}' }, { 'm', 'mps', 'mta' } },
+    { 'interface', { 'interface I {', '    X', '}' }, { 'm', 'md', 'ms' } },
+    { 'annotation', { '@interface An {', '    X', '}' }, { 'm' } },
+  } do
+    local got = listed(case[1], case[2])
+    for _, trig in ipairs(case[3]) do
+      if got[trig] and not body_of(got[trig], true):match '^/%*%*\n %*\n %*/\n' then
+        h.fail(('java snippet %s (%s) has no Javadoc skeleton: %q'):format(trig, case[1], body_of(got[trig], true)))
+      end
+    end
+  end
+  local got_class = listed('class', { 'class A {', '    X', '}' })
+  for _, trig in ipairs { 'get', 'gs', 'ctor', 'psvm', 'test', 'fp' } do
+    if got_class[trig] and body_of(got_class[trig], true):match '^/%*%*' then
+      h.fail(('java snippet %s should not get a Javadoc'):format(trig))
+    end
+  end
   vim.api.nvim_buf_delete(ctx_buf, { force = true })
+
+  -- The Javadoc follows the method head: typing into the placeholders and tabbing on redraws it.
+  local doc_buf = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_current_buf(doc_buf)
+  vim.cmd 'noautocmd setlocal filetype=java'
+  vim.bo[doc_buf].expandtab, vim.bo[doc_buf].shiftwidth = true, 4
+  local ls = require 'luasnip'
+  local function doc_expand(head)
+    vim.api.nvim_buf_set_lines(doc_buf, 0, -1, false, { 'class A {', '    ', '}' })
+    ls.snip_expand(by_trig.m, { pos = { 1, 4 } })
+    for _, text in ipairs(head) do
+      ls.session.current_nodes[doc_buf]:set_text { text }
+      ls.jump(1)
+    end
+    ls.unlink_current()
+    return vim.api.nvim_buf_get_lines(doc_buf, 1, -2, false)
+  end
+  for _, case in ipairs {
+    { {}, { '    /**', '     *', '     */', '    public void name() {' } },
+    {
+      { '<T extends Comparable<T>, U> List<T>', 'find', 'long id, Map<K, V> m, @Size(min = 1, max = 2) String... rest, int[] xs' },
+      {
+        '    /**',
+        '     *',
+        '     * @param <T>',
+        '     * @param <U>',
+        '     * @param id',
+        '     * @param m',
+        '     * @param rest',
+        '     * @param xs',
+        '     * @return',
+        '     */',
+        '    public <T extends Comparable<T>, U> List<T> find(long id, Map<K, V> m, @Size(min = 1, max = 2) String... rest, int[] xs) {',
+      },
+    },
+    { { 'void', 'run', 'int a' }, { '    /**', '     *', '     * @param a', '     */', '    public void run(int a) {' } },
+  } do
+    local got = vim.list_slice(doc_expand(case[1]), 1, #case[2])
+    if not vim.deep_equal(got, case[2]) then
+      h.fail(('java m snippet with head %s gave %s, want %s'):format(vim.inspect(case[1]), vim.inspect(got), vim.inspect(case[2])))
+    end
+  end
+  vim.api.nvim_buf_delete(doc_buf, { force = true })
 
   -- fin / fina: initialise the constructor's remaining fields (`new` or a default value).
   local fin_buf = vim.api.nvim_create_buf(true, false)
